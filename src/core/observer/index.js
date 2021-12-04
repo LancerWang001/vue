@@ -108,24 +108,37 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * or the existing observer if the value already has one.
  */
 export function observe (value: any, asRootData: ?boolean): Observer | void {
+  // 判断value是否是对象或者是VNode的实例，否则直接返回
   if (!isObject(value) || value instanceof VNode) {
     return
   }
+  // 创建观察者对象
   let ob: Observer | void
+  // 如果value是响应式对象，则将value中的__ob__取出赋值给观察者对象
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
     ob = value.__ob__
-  } else if (
+  }
+  // 满足一定条件，新建观察者对象
+  else if (
+    // 观察者模式开关打开
     shouldObserve &&
+    // 当前非服务端渲染
     !isServerRendering() &&
+    // value是数组或普通对象
     (Array.isArray(value) || isPlainObject(value)) &&
+    // value可扩展
     Object.isExtensible(value) &&
+    // value不是Vue实例
     !value._isVue
   ) {
+    // 创建value的观察者对象
     ob = new Observer(value)
   }
+  // 如果value是RootData，ob.vmCount自增
   if (asRootData && ob) {
     ob.vmCount++
   }
+  // 返回观察者对象ob
   return ob
 }
 
