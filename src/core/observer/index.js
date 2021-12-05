@@ -35,23 +35,38 @@ export function toggleObserving (value: boolean) {
  * collect dependencies and dispatch updates.
  */
 export class Observer {
+  // 观察对象
   value: any;
+  // 依赖对象
   dep: Dep;
+  // 实例计数器
   vmCount: number; // number of vms that have this object as root $data
 
+  // 构造函数
   constructor (value: any) {
+    // 从构造函数参数中获得观察对象value
     this.value = value
+    // 新建依赖对象
     this.dep = new Dep()
+    // 初始化依赖计数器为0
     this.vmCount = 0
+    // 将当前观察者对象挂载到`value.__ob__`上
     def(value, '__ob__', this)
+
+    // 判断value是否是数组
+    // 如果是数组：
     if (Array.isArray(value)) {
       if (hasProto) {
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
       }
+      // 为数组中的每一个方法创建一个observer实例
       this.observeArray(value)
-    } else {
+    }
+    // 如果不是数组
+    else {
+      // 遍历对象中的每一个属性，转换成`setter/getter`
       this.walk(value)
     }
   }
@@ -62,7 +77,9 @@ export class Observer {
    * value type is Object.
    */
   walk (obj: Object) {
+    // 获取观察对象的每一个属性
     const keys = Object.keys(obj)
+    // 遍历每一个属性，设置为响应式数据
     for (let i = 0; i < keys.length; i++) {
       defineReactive(obj, keys[i])
     }
@@ -146,61 +163,96 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
  * Define a reactive property on an Object.
  */
 export function defineReactive (
-  obj: Object,
-  key: string,
-  val: any,
-  customSetter?: ?Function,
-  shallow?: boolean
+  obj: Object, // 目标对象
+  key: string, // 将要转换的属性
+  val: any, // 属性的值
+  customSetter?: ?Function, // 自定义`setter`
+  shallow?: boolean // 不将子属性转为响应式属性
 ) {
+  // 创建依赖对象
   const dep = new Dep()
 
+  // 获取属性的属性描述符
   const property = Object.getOwnPropertyDescriptor(obj, key)
+  // 如果该属性是不可配置属性，则返回
   if (property && property.configurable === false) {
     return
   }
 
   // cater for pre-defined getter/setters
+  // 获取属性存储器函数`setter`/`getter`
   const getter = property && property.get
   const setter = property && property.set
+  // 满足以下条件，属性的值从`obj[key]`中获取
+  // 1. 属性没有设置getter或有`setter`
+  // 2. 只传递了`obj`和`key`
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key]
   }
 
+  // 如果需要递归观察子属性，则将子属性转化为响应式对象，并接收子属性的观察者对象
   let childOb = !shallow && observe(val)
+
+  // 将当前属性转化为响应式属性
   Object.defineProperty(obj, key, {
+    // 设置属性为可枚举属性
     enumerable: true,
+    // 设置属性为可配置属性
     configurable: true,
+    // 添加`getter`取值器
     get: function reactiveGetter () {
+      // 获取属性值
+      // 如果已存在`getter`，则用`obj`调用`getter`获取`value`
+      // 如果不存在`getter`，则使用计算后的`val`
       const value = getter ? getter.call(obj) : val
+      // 如果存在当前依赖目标，即`watcher`对象，则建立依赖
       if (Dep.target) {
+        // 将依赖目标`watcher`添加到依赖对象
         dep.depend()
+        // 如果存在子属性的观察者对象，则将子属性的依赖目标添加到子属性的依赖对象上
         if (childOb) {
+          // 将子属性的依赖目标添加到子属性的依赖对象上
           childOb.dep.depend()
+          // 如果当前属性值是数组，则递归将数组中的每一个成员的依赖目标添加到依赖对象上
           if (Array.isArray(value)) {
+            // 递归将数组中的每一个成员的依赖目标添加到依赖对象上
             dependArray(value)
           }
         }
       }
+      // 返回属性值
       return value
     },
+    // 添加setter存储器
     set: function reactiveSetter (newVal) {
+      // 获取当前属性值
+      // 如果getter存在，则用obj调用getter获取value
+      // 如果getter不存在，则使用计算后的val
       const value = getter ? getter.call(obj) : val
       /* eslint-disable no-self-compare */
+      // 如果新值与当前属性值不同或者新值/当前值为NaN，则立即返回
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
       /* eslint-enable no-self-compare */
+      // 在开发环境中调用自定义的存储器函数
       if (process.env.NODE_ENV !== 'production' && customSetter) {
         customSetter()
       }
+      // 如果存在取值器，且不存在存储器，则直接返回
       // #7981: for accessor properties without setter
       if (getter && !setter) return
+      // 如果存在setter函数，则使用obj调用setter，并传入新值
       if (setter) {
         setter.call(obj, newVal)
-      } else {
+      }
+      // 否则将新值赋予当前属性值
+      else {
         val = newVal
       }
+      // 如果没有设置浅层响应，则将新值转为响应式
       childOb = !shallow && observe(newVal)
+      // 向依赖目标派发更新通知
       dep.notify()
     }
   })
