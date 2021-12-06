@@ -56,7 +56,9 @@ export class Observer {
     // 判断value是否是数组
     // 如果是数组：
     if (Array.isArray(value)) {
+        // 如果浏览器支持__proto__属性
       if (hasProto) {
+        // 替换value的原型属性，添加自定义的数组方法
         protoAugment(value, arrayMethods)
       } else {
         copyAugment(value, arrayMethods, arrayKeys)
