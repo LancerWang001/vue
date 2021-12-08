@@ -61,6 +61,7 @@ export class Observer {
         // 替换value的原型属性，添加自定义的数组方法
         protoAugment(value, arrayMethods)
       } else {
+				// 将拦截过的数组原生方法挂载到响应式对象上
         copyAugment(value, arrayMethods, arrayKeys)
       }
       // 为数组中的每一个方法创建一个observer实例

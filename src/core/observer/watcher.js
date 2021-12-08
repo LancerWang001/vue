@@ -57,6 +57,7 @@ export default class Watcher {
       vm._watcher = this
     }
     // 将watcher添加至vm的watcher数组
+		// 计算属性和侦听器也会加入其中
     vm._watchers.push(this)
     // options
     // 从参数options中获取watcher标识
@@ -104,6 +105,7 @@ export default class Watcher {
     // 否则从this.vm中获取对应的方法，赋值给`this.getter`
     else {
       // this.vm中获取对应的方法，赋值给`this.getter`
+			// parsePath('person.name') => { watch: { 'person.name': function () {} } }
       this.getter = parsePath(expOrFn)
       // 如果获取不到getter，则将订阅更新执行方法赋值为空函数，并给予开发警告
       if (!this.getter) {
@@ -197,6 +199,7 @@ export default class Watcher {
         dep.removeSub(this)
       }
     }
+		// => 交换新依赖与旧依赖，并清空旧依赖
     // 将新依赖数组赋值给旧依赖数组
     // 将新依赖数组清空
     // 将新依赖id集合赋值给旧依赖id集合
@@ -241,6 +244,8 @@ export default class Watcher {
     // 如果当前watcher处于活跃状态，则立即执行更新方法
     if (this.active) {
       // 执行this.get，获取更新后的订阅值
+			// 在渲染watcher中，订阅值value的值为空
+			// 在计算watcher和自定义watcher中，value是有具体值的
       const value = this.get()
       // 如果订阅值发生变化，或新值是对象或设置了深层订阅标识，则替换旧订阅值
       if (
@@ -262,6 +267,7 @@ export default class Watcher {
         // 调用订阅更新后的回调函数this.cb
         if (this.user) {
           // 如果是自定义watcher，则执行专门的回调执行方法
+					// 防止自定义watcher报错导致页面崩溃
           const info = `callback for watcher "${this.expression}"`
           invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info)
         } else {

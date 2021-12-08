@@ -187,6 +187,8 @@ export function mountComponent (
     }
   } else {
     updateComponent = () => {
+			// vm._render：用户传入的render函数或编译模板后的render函数
+			// vm._update：调用`patch`方法，将虚拟dom转为真实dom，挂载到页面上
       vm._update(vm._render(), hydrating)
     }
   }
@@ -194,7 +196,14 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
+	// 实参：
+	// vm：Vue组件实例
+	// updateComponent：更新方法
+	// noop：更新后的回调函数
+	// { before() {} }：Watcher选项配置
+	// true：标识当前`Watcher`为渲染Wacther
   new Watcher(vm, updateComponent, noop, {
+		// before：更新前的操作，触发`beforeUpdate`钩子函数
     before () {
       if (vm._isMounted && !vm._isDestroyed) {
         callHook(vm, 'beforeUpdate')
