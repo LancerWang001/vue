@@ -266,7 +266,9 @@ export function defineReactive (
  * triggers change notification if the property doesn't
  * already exist.
  */
+// 为响应式对象添加响应式属性
 export function set (target: Array<any> | Object, key: any, val: any): any {
+	// 如果当前是开发环境，且目标值是undefined或原始类型，则弹出提示
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {

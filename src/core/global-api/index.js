@@ -41,11 +41,13 @@ export function initGlobalAPI (Vue: GlobalAPI) {
     defineReactive
   }
 
+	// 静态方法 set / del / nextTick
   Vue.set = set
   Vue.delete = del
   Vue.nextTick = nextTick
 
   // 2.6 explicit observable API
+	// 将普通对象变为响应式对象
   Vue.observable = <T>(obj: T): T => {
     observe(obj)
     return obj

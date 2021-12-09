@@ -1170,7 +1170,9 @@
    * triggers change notification if the property doesn't
    * already exist.
    */
+  // 为响应式对象添加响应式属性
   function set (target, key, val) {
+  	// 如果当前是开发环境，且目标值是undefined或原始类型，则弹出提示
     if (isUndef(target) || isPrimitive(target)
     ) {
       warn(("Cannot set reactive property on undefined, null, or primitive value: " + ((target))));
@@ -4361,7 +4363,9 @@
    */
   // 重置更新队列信息
   function resetSchedulerState () {
-  	// 重置更新队列指针
+  	// 重置更新队列指针为0
+  	// 重置更新队列长度为0
+  	// 重置已更新子节点长度为0
     index = queue.length = activatedChildren.length = 0;
   	// 重置去重标识
     has = {};
@@ -5679,11 +5683,13 @@
       defineReactive: defineReactive$$1
     };
 
+  	// 静态方法 set / del / nextTick
     Vue.set = set;
     Vue.delete = del;
     Vue.nextTick = nextTick;
 
     // 2.6 explicit observable API
+  	// 将普通对象变为响应式对象
     Vue.observable = function (obj) {
       observe(obj);
       return obj

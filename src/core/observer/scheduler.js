@@ -27,7 +27,9 @@ let index = 0
  */
 // 重置更新队列信息
 function resetSchedulerState () {
-	// 重置更新队列指针
+	// 重置更新队列指针为0
+	// 重置更新队列长度为0
+	// 重置已更新子节点长度为0
   index = queue.length = activatedChildren.length = 0
 	// 重置去重标识
   has = {}
