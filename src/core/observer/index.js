@@ -172,7 +172,7 @@ export function defineReactive (
   customSetter?: ?Function, // 自定义`setter`
   shallow?: boolean // 不将子属性转为响应式属性
 ) {
-  // 创建依赖对象
+  // 为每一个响应式对象obj的每一个属性创建依赖对象
   const dep = new Dep()
 
   // 获取属性的属性描述符
@@ -210,11 +210,11 @@ export function defineReactive (
       const value = getter ? getter.call(obj) : val
       // 如果存在当前依赖目标，即`watcher`对象，则建立依赖
       if (Dep.target) {
-        // 将依赖目标`watcher`添加到依赖对象
+        // 将依赖目标`watcher`添加到该属性key的依赖对象dep上
         dep.depend()
-        // 如果存在子属性的观察者对象，则将子属性的依赖目标添加到子属性的依赖对象上
+        // 如果子属性的值也是响应式对象，则将依赖目标添加到子属性值的依赖对象val.__ob__上
         if (childOb) {
-          // 将子属性的依赖目标添加到子属性的依赖对象上
+          // 将依赖目标添加到子属性值的依赖对象上
           childOb.dep.depend()
           // 如果当前属性值是数组，则递归将数组中的每一个成员的依赖目标添加到依赖对象上
           if (Array.isArray(value)) {
