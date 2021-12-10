@@ -40,7 +40,7 @@ export default class Watcher {
   depIds: SimpleSet; // 上一次更新的依赖id集合
   newDepIds: SimpleSet; // 新更新的依赖id集合
   before: ?Function; // 订阅更新前执行的方法
-  getter: Function; // 订阅更新时执行的方法
+  getter: Function; // 获取订阅值的方法
   value: any; // 当前订阅值
 
   constructor (
