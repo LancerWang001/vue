@@ -291,13 +291,18 @@ function initMethods (vm: Component, methods: Object) {
 }
 
 function initWatch (vm: Component, watch: Object) {
+	// 遍历vm.options.watch对象
   for (const key in watch) {
+		// 根据key获取当前处理器对象handler
     const handler = watch[key]
+		// 如果处理器是数组，则遍历数组，为数组中的每个子处理器创建当前key的watcher侦听器
     if (Array.isArray(handler)) {
+			// 遍历数组，为每个数组中的每个子处理器创建当前key的watcher侦听器
       for (let i = 0; i < handler.length; i++) {
         createWatcher(vm, key, handler[i])
       }
     } else {
+			// 否则为处理器创建当前key的watcher侦听器
       createWatcher(vm, key, handler)
     }
   }
@@ -309,13 +314,19 @@ function createWatcher (
   handler: any,
   options?: Object
 ) {
+	// 如果处理器handler是对象，将handler作为watcher的选项，handler中的handler属性作为处理器对象
   if (isPlainObject(handler)) {
+		// 将handler作为watcher的选项options
     options = handler
+		// 将handler的handler属性作为处理器对象
     handler = handler.handler
   }
+	// 如果handler处理器对象是字符串，将`vm`中对应的属性值作为handler处理器对象
   if (typeof handler === 'string') {
+		// 将`vm`中对应的属性值作为handler处理器对象
     handler = vm[handler]
   }
+	// 创建watcher对象并返回
   return vm.$watch(expOrFn, handler, options)
 }
 
@@ -350,19 +361,30 @@ export function stateMixin (Vue: Class<Component>) {
     cb: any,
     options?: Object
   ): Function {
+		// 获取Vue实例，即this
     const vm: Component = this
+		// 如果cb回调函数是对象，则将cb作为handler再次调用createWatcher，且将watcher返回
     if (isPlainObject(cb)) {
       return createWatcher(vm, expOrFn, cb, options)
     }
+		// 为options选项添加默认值，即空对象
     options = options || {}
+		// 为选项添加选项user = true，标识当前watcher为用户自定义watcher
     options.user = true
+		// 创建Watcher实例
     const watcher = new Watcher(vm, expOrFn, cb, options)
+		// 如果需要立即执行，则立即执行一次回调函数
     if (options.immediate) {
+			// 生成提示信息，在回调函数执行报错时弹出
       const info = `callback for immediate watcher "${watcher.expression}"`
+			// 将当前依赖目标置空
       pushTarget()
+			// 调用回调处理函数
       invokeWithErrorHandling(cb, vm, [watcher.value], vm, info)
+			// 恢复上一帧的依赖目标
       popTarget()
     }
+		// 返回取消订阅的方法
     return function unwatchFn () {
       watcher.teardown()
     }

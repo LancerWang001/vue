@@ -1177,59 +1177,89 @@
     ) {
       warn(("Cannot set reactive property on undefined, null, or primitive value: " + ((target))));
     }
+  	// 如果是数组，且key是合法的数组索引
     if (Array.isArray(target) && isValidArrayIndex(key)) {
+  		// 重置数组的长度，以保证元素替换到数组指定的位置
       target.length = Math.max(target.length, key);
+  		// 将元素替换到数组中索引对应的位置
+  		// 调用原生的`splice`方法，该方法被拦截后在内部将属性值转换为响应式数据，并且派发了更新通知
       target.splice(key, 1, val);
+  		// 返回属性值
       return val
     }
+  	// 如果目标中已包含当前属性，并且该属性不是原型属性
     if (key in target && !(key in Object.prototype)) {
+  		// 将目标的该属性赋值为当前属性值
       target[key] = val;
+  		// 返回属性值
       return val
     }
+  	// 获取观察者对象
     var ob = (target).__ob__;
+  	// 如果目标对象是Vue实例，并且是根数据，则提示警告，并立即返回属性值
     if (target._isVue || (ob && ob.vmCount)) {
       warn(
         'Avoid adding reactive properties to a Vue instance or its root $data ' +
         'at runtime - declare it upfront in the data option.'
       );
+  		// 返回属性值
       return val
     }
+  	// 如果当前目标对象不是响应式对象，则为目标对象的指定属性赋值为指定属性值，并返回该属性值
     if (!ob) {
+  		// 为目标对象添加属性
       target[key] = val;
+  		// 返回属性值
       return val
     }
+  	// 为目标对象添加指定响应式属性
     defineReactive$$1(ob.value, key, val);
+  	// 通过目标对象派发更新通知
     ob.dep.notify();
+  	// 返回指定属性值
     return val
   }
 
   /**
    * Delete a property and trigger change if necessary.
    */
+  // 将响应式数据的属性删除，并触发更新
   function del (target, key) {
+  	// 如果是开发环境并且目标对象是undefined或原始类型数据，提示警示信息
     if (isUndef(target) || isPrimitive(target)
     ) {
       warn(("Cannot delete reactive property on undefined, null, or primitive value: " + ((target))));
     }
+  	// 如果目标数据是数组，且属性是合法索引，则将索引对应位置的元素删除
     if (Array.isArray(target) && isValidArrayIndex(key)) {
+  		// 调用splice方法删除索引对应位置的元素，触发splice的拦截器，目标对象在拦截器函数中派发更新
       target.splice(key, 1);
+  		// 直接返回
       return
     }
+  	// 获取目标对象的观察者对象
     var ob = (target).__ob__;
+  	// 如果目标对象是Vue实例或目标是根数据时，提示警示信息并直接返回
     if (target._isVue || (ob && ob.vmCount)) {
+  		// 如果当前环境是开发环境，则提示警示信息
       warn(
         'Avoid deleting properties on a Vue instance or its root $data ' +
         '- just set it to null.'
       );
+  		// 直接返回
       return
     }
+  	// 如果目标对象不包含当前属性，则直接返回
     if (!hasOwn(target, key)) {
       return
     }
+  	// 使用delete关键字删除目标对象中指定的属性
     delete target[key];
+  	// 如果目标对象非响应式数据，直接返回
     if (!ob) {
       return
     }
+  	// 目标对象派发更新通知
     ob.dep.notify();
   }
 
@@ -5130,13 +5160,18 @@
   }
 
   function initWatch (vm, watch) {
+  	// 遍历vm.options.watch对象
     for (var key in watch) {
+  		// 根据key获取当前处理器对象handler
       var handler = watch[key];
+  		// 如果处理器是数组，则遍历数组，为数组中的每个子处理器创建当前key的watcher侦听器
       if (Array.isArray(handler)) {
+  			// 遍历数组，为每个数组中的每个子处理器创建当前key的watcher侦听器
         for (var i = 0; i < handler.length; i++) {
           createWatcher(vm, key, handler[i]);
         }
       } else {
+  			// 否则为处理器创建当前key的watcher侦听器
         createWatcher(vm, key, handler);
       }
     }
@@ -5148,13 +5183,19 @@
     handler,
     options
   ) {
+  	// 如果处理器handler是对象，将handler作为watcher的选项，handler中的handler属性作为处理器对象
     if (isPlainObject(handler)) {
+  		// 将handler作为watcher的选项options
       options = handler;
+  		// 将handler的handler属性作为处理器对象
       handler = handler.handler;
     }
+  	// 如果handler处理器对象是字符串，将`vm`中对应的属性值作为handler处理器对象
     if (typeof handler === 'string') {
+  		// 将`vm`中对应的属性值作为handler处理器对象
       handler = vm[handler];
     }
+  	// 创建watcher对象并返回
     return vm.$watch(expOrFn, handler, options)
   }
 
@@ -5189,19 +5230,30 @@
       cb,
       options
     ) {
+  		// 获取Vue实例，即this
       var vm = this;
+  		// 如果cb回调函数是对象，则将cb作为handler再次调用createWatcher，且将watcher返回
       if (isPlainObject(cb)) {
         return createWatcher(vm, expOrFn, cb, options)
       }
+  		// 为options选项添加默认值，即空对象
       options = options || {};
+  		// 为选项添加选项user = true，标识当前watcher为用户自定义watcher
       options.user = true;
+  		// 创建Watcher实例
       var watcher = new Watcher(vm, expOrFn, cb, options);
+  		// 如果需要立即执行，则立即执行一次回调函数
       if (options.immediate) {
+  			// 生成提示信息，在回调函数执行报错时弹出
         var info = "callback for immediate watcher \"" + (watcher.expression) + "\"";
+  			// 将当前依赖目标置空
         pushTarget();
+  			// 调用回调处理函数
         invokeWithErrorHandling(cb, vm, [watcher.value], vm, info);
+  			// 恢复上一帧的依赖目标
         popTarget();
       }
+  		// 返回取消订阅的方法
       return function unwatchFn () {
         watcher.teardown();
       }

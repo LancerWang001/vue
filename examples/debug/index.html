@@ -10,11 +10,9 @@
 
 <body>
 	<div id="app">
-		{{ obj.title }}
+		{{ reversedMessage }}
 		<hr />
-		{{ obj.name }}
-		<hr />
-		{{ arr }}
+		{{ user.fullName }}
 	</div>
 	<script src="../../dist/vue.js"></script>
 	<script>
@@ -22,10 +20,32 @@
 		const vm = new Vue({
 			el: '#app',
 			data: {
-				obj: { title: 'Hello Vue' },
-				arr: [1, 2, 3]
-			}
+				message: 'Hello Vue',
+				user: {
+					firstName: '诸葛',
+					lastName: '亮',
+					fullName: ''
+				}
+			},
+			computed: {
+				reversedMessage: function () {
+					return this.message.split('').reverse().join('');
+				}
+			},
+			watch: {
+				'user': {
+					handler: function (newValue, oldValue) {
+						this.user.fullName = this.user.firstName + ' ' + this.user.lastName;
+					},
+					immediate: true,
+					deep: true
+				}
+			},
 		});
+
+		// vm.$watch('user', function (newValue, oldValue) {
+		// 	this.user.fullName = newValue.firstName + ' ' + newValue.lastName;
+		// }, { immediate: true, deep: true });
 	</script>
 </body>
 
