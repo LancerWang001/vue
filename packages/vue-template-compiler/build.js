@@ -32,7 +32,7 @@ function isPrimitive (value) {
 
 /**
  * Quick object check - this is primarily used to tell
- * Objects from primitive values when we know the value
+ * objects from primitive values when we know the value
  * is a JSON-compliant type.
  */
 function isObject (obj) {
@@ -1004,21 +1004,28 @@ Dep.prototype.removeSub = function removeSub (sub) {
   remove(this.subs, sub);
 };
 
+// 将依赖添加至依赖目标watcher中
 Dep.prototype.depend = function depend () {
+  // 如果依赖目标存在，将依赖添加至依赖目标中
   if (Dep.target) {
     Dep.target.addDep(this);
   }
 };
 
+// 向订阅者（依赖目标）派发通知
 Dep.prototype.notify = function notify () {
   // stabilize the subscriber list first
+  // 浅拷贝订阅者数组
   var subs = this.subs.slice();
+  // 如果是开发模式且不是异步模式，则将订阅者按照id进行排序
   if (process.env.NODE_ENV !== 'production' && !config.async) {
     // subs aren't sorted in scheduler if not running async
     // we need to sort them now to make sure they fire in correct
     // order
     subs.sort(function (a, b) { return a.id - b.id; });
   }
+  // 提示订阅者进行更新
+  // 遍历订阅者数组，执行订阅者的update方法
   for (var i = 0, l = subs.length; i < l; i++) {
     subs[i].update();
   }
@@ -1027,6 +1034,8 @@ Dep.prototype.notify = function notify () {
 // The current target watcher being evaluated.
 // This is globally unique because only one watcher
 // can be evaluated at a time.
+// Dep.target是存放目前正在使用的Watcher
+// 该属性是全局唯一，即当前只有一个Watcher被使用
 Dep.target = null;
 
 /*  */
@@ -1081,9 +1090,10 @@ Object.defineProperties( VNode.prototype, prototypeAccessors );
  * dynamically accessing methods on Array prototype
  */
 
+// 利用数组原型创建一个新的数组对象
 var arrayProto = Array.prototype;
 var arrayMethods = Object.create(arrayProto);
-
+// 拦截数组的原生方法
 var methodsToPatch = [
   'push',
   'pop',
@@ -1097,28 +1107,40 @@ var methodsToPatch = [
 /**
  * Intercept mutating methods and emit events
  */
+// 拦截数组中的指定方法，将参数转为转为响应式数据，并向值的订阅者派发更新通知
 methodsToPatch.forEach(function (method) {
   // cache original method
+  // 获取数组的原生方法
   var original = arrayProto[method];
+  // 向自定义数组原型中添加拦截后的方法
   def(arrayMethods, method, function mutator () {
     var args = [], len = arguments.length;
     while ( len-- ) args[ len ] = arguments[ len ];
 
+    // 调用原生数组方法，保存执行的结果
     var result = original.apply(this, args);
+    // 获取响应式数组的观察者对象
     var ob = this.__ob__;
+    // 初始化方法参数列表
     var inserted;
+    // 给方法参数列表赋值
     switch (method) {
+      // 拦截到`push`和`unshift`方法时，将全部参数赋值给参数列表
       case 'push':
       case 'unshift':
         inserted = args;
         break
+      // 拦截到splice方法时，只将第二个参数以后的参数赋值给参数列表
       case 'splice':
         inserted = args.slice(2);
         break
     }
+    // 如果参数列表不为空，则为列表中所有的参数添加订阅
     if (inserted) { ob.observeArray(inserted); }
     // notify change
+    // 向响应式数组的所有订阅者派发更新通知
     ob.dep.notify();
+    // 返回原生方法调用的结果
     return result
   });
 });
@@ -1140,18 +1162,32 @@ var shouldObserve = true;
  * collect dependencies and dispatch updates.
  */
 var Observer = function Observer (value) {
+  // 从构造函数参数中获得观察对象value
   this.value = value;
+  // 新建依赖对象
   this.dep = new Dep();
+  // 初始化依赖计数器为0
   this.vmCount = 0;
+  // 将当前观察者对象挂载到`value.__ob__`上
   def(value, '__ob__', this);
+
+  // 判断value是否是数组
+  // 如果是数组：
   if (Array.isArray(value)) {
+      // 如果浏览器支持__proto__属性
     if (hasProto) {
+      // 替换value的原型属性，添加自定义的数组方法
       protoAugment(value, arrayMethods);
     } else {
+				// 将拦截过的数组原生方法挂载到响应式对象上
       copyAugment(value, arrayMethods, arrayKeys);
     }
+    // 为数组中的每一个方法创建一个observer实例
     this.observeArray(value);
-  } else {
+  }
+  // 如果不是数组
+  else {
+    // 遍历对象中的每一个属性，转换成`setter/getter`
     this.walk(value);
   }
 };
@@ -1162,7 +1198,9 @@ var Observer = function Observer (value) {
  * value type is Object.
  */
 Observer.prototype.walk = function walk (obj) {
+  // 获取观察对象的每一个属性
   var keys = Object.keys(obj);
+  // 遍历每一个属性，设置为响应式数据
   for (var i = 0; i < keys.length; i++) {
     defineReactive$$1(obj, keys[i]);
   }
@@ -1207,24 +1245,37 @@ function copyAugment (target, src, keys) {
  * or the existing observer if the value already has one.
  */
 function observe (value, asRootData) {
+  // 判断value是否是对象或者是VNode的实例，否则直接返回
   if (!isObject(value) || value instanceof VNode) {
     return
   }
+  // 创建观察者对象
   var ob;
+  // 如果value是响应式对象，则将value中的__ob__取出赋值给观察者对象
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
     ob = value.__ob__;
-  } else if (
+  }
+  // 满足一定条件，新建观察者对象
+  else if (
+    // 观察者模式开关打开
     shouldObserve &&
+    // 当前非服务端渲染
     !isServerRendering() &&
+    // value是数组或普通对象
     (Array.isArray(value) || isPlainObject(value)) &&
+    // value可扩展
     Object.isExtensible(value) &&
+    // value不是Vue实例
     !value._isVue
   ) {
+    // 创建value的观察者对象
     ob = new Observer(value);
   }
+  // 如果value是RootData，ob.vmCount自增
   if (asRootData && ob) {
     ob.vmCount++;
   }
+  // 返回观察者对象ob
   return ob
 }
 
@@ -1232,61 +1283,96 @@ function observe (value, asRootData) {
  * Define a reactive property on an Object.
  */
 function defineReactive$$1 (
-  obj,
-  key,
-  val,
-  customSetter,
-  shallow
+  obj, // 目标对象
+  key, // 将要转换的属性
+  val, // 属性的值
+  customSetter, // 自定义`setter`
+  shallow // 不将子属性转为响应式属性
 ) {
+  // 为每一个响应式对象obj的每一个属性创建依赖对象
   var dep = new Dep();
 
+  // 获取属性的属性描述符
   var property = Object.getOwnPropertyDescriptor(obj, key);
+  // 如果该属性是不可配置属性，则返回
   if (property && property.configurable === false) {
     return
   }
 
   // cater for pre-defined getter/setters
+  // 获取属性存储器函数`setter`/`getter`
   var getter = property && property.get;
   var setter = property && property.set;
+  // 满足以下条件，属性的值从`obj[key]`中获取
+  // 1. 属性没有设置getter或有`setter`
+  // 2. 只传递了`obj`和`key`
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key];
   }
 
+  // 如果需要递归观察子属性，则将子属性转化为响应式对象，并接收子属性的观察者对象
   var childOb = !shallow && observe(val);
+
+  // 将当前属性转化为响应式属性
   Object.defineProperty(obj, key, {
+    // 设置属性为可枚举属性
     enumerable: true,
+    // 设置属性为可配置属性
     configurable: true,
+    // 添加`getter`取值器
     get: function reactiveGetter () {
+      // 获取属性值
+      // 如果已存在`getter`，则用`obj`调用`getter`获取`value`
+      // 如果不存在`getter`，则使用计算后的`val`
       var value = getter ? getter.call(obj) : val;
+      // 如果存在当前依赖目标，即`watcher`对象，则建立依赖
       if (Dep.target) {
+        // 将依赖目标`watcher`添加到该属性key的依赖对象dep上
         dep.depend();
+        // 如果子属性的值也是响应式对象，则将依赖目标添加到子属性值的依赖对象val.__ob__上
         if (childOb) {
+          // 将依赖目标添加到子属性值的依赖对象上
           childOb.dep.depend();
+          // 如果当前属性值是数组，则递归将数组中的每一个成员的依赖目标添加到依赖对象上
           if (Array.isArray(value)) {
+            // 递归将数组中的每一个成员的依赖目标添加到依赖对象上
             dependArray(value);
           }
         }
       }
+      // 返回属性值
       return value
     },
+    // 添加setter存储器
     set: function reactiveSetter (newVal) {
+      // 获取当前属性值
+      // 如果getter存在，则用obj调用getter获取value
+      // 如果getter不存在，则使用计算后的val
       var value = getter ? getter.call(obj) : val;
       /* eslint-disable no-self-compare */
+      // 如果新值与当前属性值不同或者新值/当前值为NaN，则立即返回
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return
       }
       /* eslint-enable no-self-compare */
+      // 在开发环境中调用自定义的存储器函数
       if (process.env.NODE_ENV !== 'production' && customSetter) {
         customSetter();
       }
+      // 如果存在取值器，且不存在存储器，则直接返回
       // #7981: for accessor properties without setter
       if (getter && !setter) { return }
+      // 如果存在setter函数，则使用obj调用setter，并传入新值
       if (setter) {
         setter.call(obj, newVal);
-      } else {
+      }
+      // 否则将新值赋予当前属性值
+      else {
         val = newVal;
       }
+      // 如果没有设置浅层响应，则将新值转为响应式
       childOb = !shallow && observe(newVal);
+      // 向依赖目标派发更新通知
       dep.notify();
     }
   });
@@ -1297,35 +1383,54 @@ function defineReactive$$1 (
  * triggers change notification if the property doesn't
  * already exist.
  */
+// 为响应式对象添加响应式属性
 function set (target, key, val) {
+	// 如果当前是开发环境，且目标值是undefined或原始类型，则弹出提示
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
     warn(("Cannot set reactive property on undefined, null, or primitive value: " + ((target))));
   }
+	// 如果是数组，且key是合法的数组索引
   if (Array.isArray(target) && isValidArrayIndex(key)) {
+		// 重置数组的长度，以保证元素替换到数组指定的位置
     target.length = Math.max(target.length, key);
+		// 将元素替换到数组中索引对应的位置
+		// 调用原生的`splice`方法，该方法被拦截后在内部将属性值转换为响应式数据，并且派发了更新通知
     target.splice(key, 1, val);
+		// 返回属性值
     return val
   }
+	// 如果目标中已包含当前属性，并且该属性不是原型属性
   if (key in target && !(key in Object.prototype)) {
+		// 将目标的该属性赋值为当前属性值
     target[key] = val;
+		// 返回属性值
     return val
   }
+	// 获取观察者对象
   var ob = (target).__ob__;
+	// 如果目标对象是Vue实例，并且是根数据，则提示警告，并立即返回属性值
   if (target._isVue || (ob && ob.vmCount)) {
     process.env.NODE_ENV !== 'production' && warn(
       'Avoid adding reactive properties to a Vue instance or its root $data ' +
       'at runtime - declare it upfront in the data option.'
     );
+		// 返回属性值
     return val
   }
+	// 如果当前目标对象不是响应式对象，则为目标对象的指定属性赋值为指定属性值，并返回该属性值
   if (!ob) {
+		// 为目标对象添加属性
     target[key] = val;
+		// 返回属性值
     return val
   }
+	// 为目标对象添加指定响应式属性
   defineReactive$$1(ob.value, key, val);
+	// 通过目标对象派发更新通知
   ob.dep.notify();
+	// 返回指定属性值
   return val
 }
 
@@ -1609,9 +1714,13 @@ function assertObjectType (name, value, vm) {
 
 var callbacks = [];
 
+// 刷新任务队列，执行队列中所有的任务
 function flushCallbacks () {
+	// 浅拷贝任务队列
   var copies = callbacks.slice(0);
+	// 清空当前任务队列
   callbacks.length = 0;
+	// 顺序执行所有的任务
   for (var i = 0; i < copies.length; i++) {
     copies[i]();
   }
@@ -1624,7 +1733,12 @@ function flushCallbacks () {
 // completely stops working after triggering a few times... so, if native
 // Promise is available, we will use it:
 /* istanbul ignore next, $flow-disable-line */
-if (typeof Promise !== 'undefined' && isNative(Promise)) ; else if (!isIE && typeof MutationObserver !== 'undefined' && (
+// 处理浏览器异步方案的兼容问题
+// 如果支持原生Promise，则使用原生Promise
+if (typeof Promise !== 'undefined' && isNative(Promise)) ;
+// 如果不支持原生Promise且不是IE浏览器，且支持原生MutationObserver，则使用原生MutationObserver
+// 兼容平台：PhantomJS，IOS，Andriod 4.4
+else if (!isIE && typeof MutationObserver !== 'undefined' && (
   isNative(MutationObserver) ||
   // PhantomJS and iOS 7.x
   MutationObserver.toString() === '[object MutationObserverConstructor]'
@@ -1632,13 +1746,18 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) ; else if (!isIE && typ
   // Use MutationObserver where native Promise is not available,
   // e.g. PhantomJS, iOS7, Android 4.4
   // (#6466 MutationObserver is unreliable in IE11)
+	// 创建MutationObserver实例，将flushCallbacks作为回调函数
   var counter = 1;
   var observer = new MutationObserver(flushCallbacks);
+	// 创建文本节点作为MutationObserver的观察对象
   var textNode = document.createTextNode(String(counter));
   observer.observe(textNode, {
     characterData: true
   });
-} else if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) ;
+}
+// 如果不支持微任务Promise / MutationObserver，则使用宏任务。
+// 如果支持setImmediate，则使用setImmediate：IE实现支持
+else if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) ;
 
 /*  */
 
@@ -2113,7 +2232,7 @@ function transformNode (el, options) {
     }
   }
   if (staticClass) {
-    el.staticClass = JSON.stringify(staticClass);
+    el.staticClass = JSON.stringify(staticClass.replace(/\s+/g, ' ').trim());
   }
   var classBinding = getBindingAttr(el, 'class', false /* getStatic */);
   if (classBinding) {

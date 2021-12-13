@@ -14,38 +14,29 @@
 		<hr />
 		{{ user.fullName }}
 	</div>
-	<script src="../../dist/vue.js"></script>
+	<script src="../../dist/vue.runtime.js"></script>
 	<script>
 		// 如果同时设置template和render此时会渲染什么？
 		const vm = new Vue({
 			el: '#app',
+			render(h) {
+				// h(tag, data, children)
+				// tag除了支持标签名以外，还可以传递Vue组件
+				// h('h1', this.msg)
+				// h('h1', { domProps: { innerHTML: this.msg } })
+				// h('h1', { attrs: { id: 'title' } }, this.msg)
+				const vnode = h(
+					'h1',
+					{ attrs: { id: 'title' } },
+					this.msg
+				);
+				console.log(vnode)
+				return vnode;
+			},
 			data: {
-				message: 'Hello Vue',
-				user: {
-					firstName: '诸葛',
-					lastName: '亮',
-					fullName: ''
-				}
-			},
-			computed: {
-				reversedMessage: function () {
-					return this.message.split('').reverse().join('');
-				}
-			},
-			watch: {
-				'user': {
-					handler: function (newValue, oldValue) {
-						this.user.fullName = this.user.firstName + ' ' + this.user.lastName;
-					},
-					immediate: true,
-					deep: true
-				}
-			},
+				msg: 'Hello Vue'
+			}
 		});
-
-		// vm.$watch('user', function (newValue, oldValue) {
-		// 	this.user.fullName = newValue.firstName + ' ' + newValue.lastName;
-		// }, { immediate: true, deep: true });
 	</script>
 </body>
 
