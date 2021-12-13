@@ -2041,10 +2041,15 @@
   var callbacks = [];
   var pending = false;
 
+  // 刷新任务队列，执行队列中所有的任务
   function flushCallbacks () {
+  	// 将等待标识置为false
     pending = false;
+  	// 浅拷贝任务队列
     var copies = callbacks.slice(0);
+  	// 清空当前任务队列
     callbacks.length = 0;
+  	// 顺序执行所有的任务
     for (var i = 0; i < copies.length; i++) {
       copies[i]();
     }
@@ -2061,6 +2066,7 @@
   // where microtasks have too high a priority and fire in between supposedly
   // sequential events (e.g. #4521, #6690, which have workarounds)
   // or even between bubbling of the same event (#6566).
+  // 初始化异步执行方法
   var timerFunc;
 
   // The nextTick behavior leverages the microtask queue, which can be accessed
@@ -2070,8 +2076,11 @@
   // completely stops working after triggering a few times... so, if native
   // Promise is available, we will use it:
   /* istanbul ignore next, $flow-disable-line */
+  // 处理浏览器异步方案的兼容问题
+  // 如果支持原生Promise，则使用原生Promise
   if (typeof Promise !== 'undefined' && isNative(Promise)) {
     var p = Promise.resolve();
+  	// 使用Promise.resolve将flushCallback执行过程推入微任务队列
     timerFunc = function () {
       p.then(flushCallbacks);
       // In problematic UIWebViews, Promise.then doesn't completely break, but
@@ -2079,10 +2088,15 @@
       // microtask queue but the queue isn't being flushed, until the browser
       // needs to do some other work, e.g. handle a timer. Therefore we can
       // "force" the microtask queue to be flushed by adding an empty timer.
+  		// 解决IOS中的bug，微任务队列中任务不被执行的问题：通过添加空的定时器强制刷新微任务队列
       if (isIOS) { setTimeout(noop); }
     };
+  	// 将使用微任务标识置为true
     isUsingMicroTask = true;
-  } else if (!isIE && typeof MutationObserver !== 'undefined' && (
+  }
+  // 如果不支持原生Promise且不是IE浏览器，且支持原生MutationObserver，则使用原生MutationObserver
+  // 兼容平台：PhantomJS，IOS，Andriod 4.4
+  else if (!isIE && typeof MutationObserver !== 'undefined' && (
     isNative(MutationObserver) ||
     // PhantomJS and iOS 7.x
     MutationObserver.toString() === '[object MutationObserverConstructor]'
@@ -2090,51 +2104,74 @@
     // Use MutationObserver where native Promise is not available,
     // e.g. PhantomJS, iOS7, Android 4.4
     // (#6466 MutationObserver is unreliable in IE11)
+  	// 创建MutationObserver实例，将flushCallbacks作为回调函数
     var counter = 1;
     var observer = new MutationObserver(flushCallbacks);
+  	// 创建文本节点作为MutationObserver的观察对象
     var textNode = document.createTextNode(String(counter));
     observer.observe(textNode, {
       characterData: true
     });
+  	// 在异步任务执行方法中手动改变被观察节点的内容，引起MutationObserver的反应，将flushCallbacks推入微任务执行队列
     timerFunc = function () {
       counter = (counter + 1) % 2;
       textNode.data = String(counter);
     };
+  	// 将使用微任务标识置为true
     isUsingMicroTask = true;
-  } else if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) {
+  }
+  // 如果不支持微任务Promise / MutationObserver，则使用宏任务。
+  // 如果支持setImmediate，则使用setImmediate：IE实现支持
+  else if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) {
     // Fallback to setImmediate.
     // Technically it leverages the (macro) task queue,
     // but it is still a better choice than setTimeout.
+  	// 在异步任务执行方法中调用setImmediate将flushCallbacks推入宏任务执行队列
     timerFunc = function () {
       setImmediate(flushCallbacks);
     };
-  } else {
+  }
+  // 如果不支持微任务也不支持`setImmediate`，则使用`setTimeout`
+  else {
     // Fallback to setTimeout.
+  	// 在异步任务执行方法中调用setTimeout将flushCallbacks推入宏任务执行队列
     timerFunc = function () {
       setTimeout(flushCallbacks, 0);
     };
   }
 
+  // 异步队列执行函数
   function nextTick (cb, ctx) {
+  	// 初始化解决方法_resolve
     var _resolve;
+  	// 为cb添加异常处理，存入callbacks数组
     callbacks.push(function () {
+  		// 如果cb不为空，则调用cb
       if (cb) {
         try {
           cb.call(ctx);
         } catch (e) {
+  				// 捕捉cb的执行错误，进行处理
           handleError(e, ctx, 'nextTick');
         }
-      } else if (_resolve) {
+      }
+  		// 如果cb为空，解决方法_resolve不为空，则将ctx参数执行_resolve
+  		else if (_resolve) {
         _resolve(ctx);
       }
     });
+  	// 如果当前执行队列没有在刷新，则立即开始执行队列中的任务
     if (!pending) {
+  		// 将等待标识置为true
       pending = true;
+  		// 执行队列中的任务
       timerFunc();
     }
     // $flow-disable-line
+  	// 如果cb为空，则返回promise代理队列中任务执行的终值
     if (!cb && typeof Promise !== 'undefined') {
       return new Promise(function (resolve) {
+  			// 将promise的解决函数赋值给_resolve，则只有在当前任务执行结束后promise才完成
         _resolve = resolve;
       })
     }
@@ -5039,13 +5076,19 @@
 
   function initComputed (vm, computed) {
     // $flow-disable-line
+  	// 初始化vm._computedWatchers为空对象
     var watchers = vm._computedWatchers = Object.create(null);
     // computed properties are just getters during SSR
+  	// 获取当前是否是SSR的标识
     var isSSR = isServerRendering();
 
+  	// 遍历vm.options.computed对象
     for (var key in computed) {
+  		// 根据computed的key获取计算属性的属性描述
       var userDef = computed[key];
+  		// 根据属性描述获取计算属性的getter
       var getter = typeof userDef === 'function' ? userDef : userDef.get;
+  		// 如果getter为空，且当前环境为开发环境，则提示响应的警示信息
       if (getter == null) {
         warn(
           ("Getter is missing for computed property \"" + key + "\"."),
@@ -5053,12 +5096,16 @@
         );
       }
 
+  		// 如果当前环境不是SSR，则创建lazy watcher，存入vm._computedWatchers中
       if (!isSSR) {
         // create internal watcher for the computed property.
         watchers[key] = new Watcher(
           vm,
+  				// 默认getter为空函数
           getter || noop,
+  				// 更新订阅回调函数为空函数
           noop,
+  				// watcher默认是延迟执行的
           computedWatcherOptions
         );
       }
@@ -5066,9 +5113,13 @@
       // component-defined computed properties are already defined on the
       // component prototype. We only need to define computed properties defined
       // at instantiation here.
+  		// 如果当前vm没有当前计算属性同名的属性，则创建该计算属性
       if (!(key in vm)) {
         defineComputed(vm, key, userDef);
-      } else {
+      }
+  		// 否则在开发环境中提示相应的警示
+  		else {
+  			// 如果当前属性同data/props/methods中的属性同名，则提示警示信息
         if (key in vm.$data) {
           warn(("The computed property \"" + key + "\" is already defined in data."), vm);
         } else if (vm.$options.props && key in vm.$options.props) {
@@ -5085,20 +5136,32 @@
     key,
     userDef
   ) {
+  	// 如果当前环境不是服务端渲染，则设置缓存标识为true
     var shouldCache = !isServerRendering();
+  	// 获取计算属性的属性描述，默认的描述是可配置、可枚举，getter/setter为空函数
+  	// 合并用户传入的属性描述和默认属性描述中的`getter/setter`
+  	// 如果用户传入的属性描述是函数，则将用户属性描述作为用户传入的属性`getter`
     if (typeof userDef === 'function') {
+  		// 如果缓存标识为true，则通过`createComputedGetter`创建计算属性的`getter`，在watcher依赖不变的情况下，不会重新计算属性的值
       sharedPropertyDefinition.get = shouldCache
         ? createComputedGetter(key)
+  			// 否则通过`createGetterInvoker`创建计算属性的`getter`，每次取值时都会重新计算属性值
         : createGetterInvoker(userDef);
+  		// 将属性的`setter`置为空函数
       sharedPropertyDefinition.set = noop;
     } else {
+  		// 否则，认为用户传入的属性描述为对象，并从用户属性描述的`get`/`set`中获取用户传入的`getter`/`setter`
       sharedPropertyDefinition.get = userDef.get
+  			// 如果缓存标识为true，且用户传入的属性描述中没有设置cache为false，通过`createComputedGetter`创建属性的`getter`，在watcher依赖不变的情况下，不会重新计算属性的值
         ? shouldCache && userDef.cache !== false
           ? createComputedGetter(key)
+  				// 否则通过`createGetterInvoker`创建计算属性的`getter`，每次取值时都会重新计算属性值
           : createGetterInvoker(userDef.get)
         : noop;
+  		// 将用户传入的`setter`作为计算属性的setter
       sharedPropertyDefinition.set = userDef.set || noop;
     }
+  	// 在开发环境中，如果计算属性的`setter`为空函数，则提示响应的警示信息
     if (sharedPropertyDefinition.set === noop) {
       sharedPropertyDefinition.set = function () {
         warn(
@@ -5107,19 +5170,25 @@
         );
       };
     }
+  	// 为vm添加计算属性
     Object.defineProperty(target, key, sharedPropertyDefinition);
   }
 
   function createComputedGetter (key) {
     return function computedGetter () {
+  		// 获取Vue实例上的计算属性监听器watcher
       var watcher = this._computedWatchers && this._computedWatchers[key];
       if (watcher) {
+  			// 如果watcher存在，则判断watcher的依赖是否发生了变化
+  			// 如果watcher依赖改变，则重新计算watcher的订阅值
         if (watcher.dirty) {
           watcher.evaluate();
         }
+  			// 如果当前存在依赖目标量，则更新依赖
         if (Dep.target) {
           watcher.depend();
         }
+  			// 返回当前监听器的订阅值
         return watcher.value
       }
     }
@@ -5127,6 +5196,7 @@
 
   function createGetterInvoker(fn) {
     return function computedGetter () {
+  		// 用vm执行当前计算属性的`getter`，并将计算结果返回
       return fn.call(this, this)
     }
   }

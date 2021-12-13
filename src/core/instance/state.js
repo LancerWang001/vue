@@ -169,13 +169,19 @@ const computedWatcherOptions = { lazy: true }
 
 function initComputed (vm: Component, computed: Object) {
   // $flow-disable-line
+	// 初始化vm._computedWatchers为空对象
   const watchers = vm._computedWatchers = Object.create(null)
   // computed properties are just getters during SSR
+	// 获取当前是否是SSR的标识
   const isSSR = isServerRendering()
 
+	// 遍历vm.options.computed对象
   for (const key in computed) {
+		// 根据computed的key获取计算属性的属性描述
     const userDef = computed[key]
+		// 根据属性描述获取计算属性的getter
     const getter = typeof userDef === 'function' ? userDef : userDef.get
+		// 如果getter为空，且当前环境为开发环境，则提示响应的警示信息
     if (process.env.NODE_ENV !== 'production' && getter == null) {
       warn(
         `Getter is missing for computed property "${key}".`,
@@ -183,12 +189,16 @@ function initComputed (vm: Component, computed: Object) {
       )
     }
 
+		// 如果当前环境不是SSR，则创建lazy watcher，存入vm._computedWatchers中
     if (!isSSR) {
       // create internal watcher for the computed property.
       watchers[key] = new Watcher(
         vm,
+				// 默认getter为空函数
         getter || noop,
+				// 更新订阅回调函数为空函数
         noop,
+				// watcher默认是延迟执行的
         computedWatcherOptions
       )
     }
@@ -196,9 +206,13 @@ function initComputed (vm: Component, computed: Object) {
     // component-defined computed properties are already defined on the
     // component prototype. We only need to define computed properties defined
     // at instantiation here.
+		// 如果当前vm没有当前计算属性同名的属性，则创建该计算属性
     if (!(key in vm)) {
       defineComputed(vm, key, userDef)
-    } else if (process.env.NODE_ENV !== 'production') {
+    }
+		// 否则在开发环境中提示相应的警示
+		else if (process.env.NODE_ENV !== 'production') {
+			// 如果当前属性同data/props/methods中的属性同名，则提示警示信息
       if (key in vm.$data) {
         warn(`The computed property "${key}" is already defined in data.`, vm)
       } else if (vm.$options.props && key in vm.$options.props) {
@@ -215,20 +229,32 @@ export function defineComputed (
   key: string,
   userDef: Object | Function
 ) {
+	// 如果当前环境不是服务端渲染，则设置缓存标识为true
   const shouldCache = !isServerRendering()
+	// 获取计算属性的属性描述，默认的描述是可配置、可枚举，getter/setter为空函数
+	// 合并用户传入的属性描述和默认属性描述中的`getter/setter`
+	// 如果用户传入的属性描述是函数，则将用户属性描述作为用户传入的属性`getter`
   if (typeof userDef === 'function') {
+		// 如果缓存标识为true，则通过`createComputedGetter`创建计算属性的`getter`，在watcher依赖不变的情况下，不会重新计算属性的值
     sharedPropertyDefinition.get = shouldCache
       ? createComputedGetter(key)
+			// 否则通过`createGetterInvoker`创建计算属性的`getter`，每次取值时都会重新计算属性值
       : createGetterInvoker(userDef)
+		// 将属性的`setter`置为空函数
     sharedPropertyDefinition.set = noop
   } else {
+		// 否则，认为用户传入的属性描述为对象，并从用户属性描述的`get`/`set`中获取用户传入的`getter`/`setter`
     sharedPropertyDefinition.get = userDef.get
+			// 如果缓存标识为true，且用户传入的属性描述中没有设置cache为false，通过`createComputedGetter`创建属性的`getter`，在watcher依赖不变的情况下，不会重新计算属性的值
       ? shouldCache && userDef.cache !== false
         ? createComputedGetter(key)
+				// 否则通过`createGetterInvoker`创建计算属性的`getter`，每次取值时都会重新计算属性值
         : createGetterInvoker(userDef.get)
       : noop
+		// 将用户传入的`setter`作为计算属性的setter
     sharedPropertyDefinition.set = userDef.set || noop
   }
+	// 在开发环境中，如果计算属性的`setter`为空函数，则提示响应的警示信息
   if (process.env.NODE_ENV !== 'production' &&
       sharedPropertyDefinition.set === noop) {
     sharedPropertyDefinition.set = function () {
@@ -238,19 +264,25 @@ export function defineComputed (
       )
     }
   }
+	// 为vm添加计算属性
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
 function createComputedGetter (key) {
   return function computedGetter () {
+		// 获取Vue实例上的计算属性监听器watcher
     const watcher = this._computedWatchers && this._computedWatchers[key]
     if (watcher) {
+			// 如果watcher存在，则判断watcher的依赖是否发生了变化
+			// 如果watcher依赖改变，则重新计算watcher的订阅值
       if (watcher.dirty) {
         watcher.evaluate()
       }
+			// 如果当前存在依赖目标量，则更新依赖
       if (Dep.target) {
         watcher.depend()
       }
+			// 返回当前监听器的订阅值
       return watcher.value
     }
   }
@@ -258,6 +290,7 @@ function createComputedGetter (key) {
 
 function createGetterInvoker(fn) {
   return function computedGetter () {
+		// 用vm执行当前计算属性的`getter`，并将计算结果返回
     return fn.call(this, this)
   }
 }
