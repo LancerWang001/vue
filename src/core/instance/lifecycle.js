@@ -56,30 +56,43 @@ export function initLifecycle (vm: Component) {
 }
 
 export function lifecycleMixin (Vue: Class<Component>) {
+	// 渲染虚拟dom的方法
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
+		// 获取当前Vue实例
     const vm: Component = this
+		// 将Vue实例上挂载的元素当作旧挂载元素（真实dom）
     const prevEl = vm.$el
+		// 将Vue实例上挂载的虚拟dom当作旧虚拟dom
     const prevVnode = vm._vnode
+		// 恢复当前活跃Vue实例的方法
     const restoreActiveInstance = setActiveInstance(vm)
+		// 将vm._vnode赋值为新的vnode
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
+		// 如果旧vnode不存在，则初始化虚拟dom树，并转化成真实dom，挂载到vm.$el上
     if (!prevVnode) {
       // initial render
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
-    } else {
+    }
+		// 否则对比新旧vnode，将差异渲染到真实dom，挂载到vm.$el上
+		else {
       // updates
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
+		// 恢复当前活跃的Vue实例
     restoreActiveInstance()
     // update __vue__ reference
+		// 移除旧真实dom上的Vue实例
     if (prevEl) {
       prevEl.__vue__ = null
     }
+		// 将Vue实例挂载到新真实dom上
     if (vm.$el) {
       vm.$el.__vue__ = vm
     }
     // if parent is an HOC, update its $el as well
+		// 如果父Vue实例是高阶组件，则同步更新父Vue实例的挂载元素
     if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
       vm.$parent.$el = vm.$el
     }

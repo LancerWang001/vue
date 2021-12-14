@@ -48,7 +48,7 @@ export function initRender (vm: Component) {
   const parentData = parentVnode && parentVnode.data
 
   /* istanbul ignore else */
-	// 将`$attrs`和`$listeners`定义为vm的响应式属性
+	// 将标签属性和事件监听器定义为vm的响应式属性
 	// 在开发环境中，如果当前子组件正在更新，则提示警告信息
   if (process.env.NODE_ENV !== 'production') {
     defineReactive(vm, '$attrs', parentData && parentData.attrs || emptyObject, () => {
@@ -62,10 +62,11 @@ export function initRender (vm: Component) {
     defineReactive(vm, '$listeners', options._parentListeners || emptyObject, null, true)
   }
 }
-
+// 当前正在渲染的Vue实例
 export let currentRenderingInstance: Component | null = null
 
 // for testing only
+// 设置当前渲染Vue实例的方法
 export function setCurrentRenderingInstance (vm: Component) {
   currentRenderingInstance = vm
 }
@@ -82,6 +83,7 @@ export function renderMixin (Vue: Class<Component>) {
   }
 
 	// 为Vue原型添加_render方法
+	// 创建虚拟dom节点的方法
   Vue.prototype._render = function (): VNode {
 		// 获取当前Vue实例，即vm
     const vm: Component = this
@@ -107,34 +109,49 @@ export function renderMixin (Vue: Class<Component>) {
       // There's no need to maintain a stack because all render fns are called
       // separately from one another. Nested component's render fns are called
       // when parent component is patched.
-			// 将currentRenderingInstance设置为当前Vue实例
+			// 将当前Vue实例标记为正在渲染Vue实例
       currentRenderingInstance = vm
 			// 调用用户传递的`render`函数或者编译模板后转化的`render`函数，得到vnode即当前Vue实例的虚拟dom
       vnode = render.call(vm._renderProxy, vm.$createElement)
-    } catch (e) {
+    }
+		// 捕获render方法的调用错误
+		catch (e) {
+			// 处理`render`的错误
       handleError(e, vm, `render`)
       // return error render result,
       // or previous vnode to prevent render error causing blank component
       /* istanbul ignore else */
+			// 开发环境中，如果传递了捕获render错误的回调函数，则执行该回调函数
       if (process.env.NODE_ENV !== 'production' && vm.$options.renderError) {
         try {
+					// 执行render错误捕获回调函数
+					// 将vnode赋值为错误回调的执行结果
           vnode = vm.$options.renderError.call(vm._renderProxy, vm.$createElement, e)
         } catch (e) {
+					// 捕获回调函数执行的错误
           handleError(e, vm, `renderError`)
+					// 将当前vnode赋值为旧的vnode
           vnode = vm._vnode
         }
-      } else {
+      }
+			// 在生产环境中直接将旧的vnode赋值给新vnode
+			else {
         vnode = vm._vnode
       }
-    } finally {
+    }
+		// 将当前正在渲染Vue实例重置为空
+		finally {
       currentRenderingInstance = null
     }
     // if the returned array contains only a single node, allow it
+		// 如果当前vnode为长度为1的数组，则去掉数组的嵌套
     if (Array.isArray(vnode) && vnode.length === 1) {
       vnode = vnode[0]
     }
     // return empty vnode in case the render function errored out
+		// 如果创建出的虚拟dom节点不是VNode实例，则将当前vnode赋值为空节点
     if (!(vnode instanceof VNode)) {
+			// 如果新vnode是数组，则在开发环境中提示警告信息
       if (process.env.NODE_ENV !== 'production' && Array.isArray(vnode)) {
         warn(
           'Multiple root nodes returned from render function. Render function ' +
@@ -142,10 +159,13 @@ export function renderMixin (Vue: Class<Component>) {
           vm
         )
       }
+			// 将当前vnode赋值为空节点
       vnode = createEmptyVNode()
     }
     // set parent
+		// 将父组件的vnode挂载到当前vnode的parent属性上
     vnode.parent = _parentVnode
+		// 返回新vnode
     return vnode
   }
 }

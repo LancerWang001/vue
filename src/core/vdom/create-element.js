@@ -83,7 +83,7 @@ export function _createElement (
   }
   // object syntax in v-bind
 	// <component v-bind:is="currentTabComponent" />
-	// 如果data选项中有is属性，则将tag设置为data.is
+	// 如果元素设置了v-bind:is，则将tag设置为data.is
   if (isDef(data) && isDef(data.is)) {
     tag = data.is
   }
@@ -122,29 +122,47 @@ export function _createElement (
 	else if (normalizationType === SIMPLE_NORMALIZE) {
     children = simpleNormalizeChildren(children)
   }
+	// 初始化虚拟dom节点vnode，命名空间ns
   let vnode, ns
+	// 如果tag是字符串类型，则根据标签生成对应的vnode
   if (typeof tag === 'string') {
+		// 初始化组件构造函数
     let Ctor
+		// 获取命名空间
     ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag)
+		// 判断tag是否是保留字段
+		// 如果是保留字段，说明是html标签
     if (config.isReservedTag(tag)) {
       // platform built-in elements
+			// 开发环境中，如果在v-on指令中使用了'.native'修饰符，则提示警告信息
       if (process.env.NODE_ENV !== 'production' && isDef(data) && isDef(data.nativeOn) && data.tag !== 'component') {
         warn(
           `The .native modifier for v-on is only valid on components but it was used on <${tag}>.`,
           context
         )
       }
+			// 根据标签创建虚拟dom节点
       vnode = new VNode(
+				// 根据运行平台，解析出平台支持的标签名
         config.parsePlatformTagName(tag), data, children,
         undefined, undefined, context
       )
-    } else if ((!data || !data.pre) && isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
+    }
+		// 如果是自定义组件且没有使用v-pre指令，则根据组件名创建相应的组件虚拟节点
+		else if (
+			// 没有使用v-pre指令
+			(!data || !data.pre) &&
+			// 是自定义组件：resolveAsset查找自定义组件的构造函数声明
+			isDef(Ctor = resolveAsset(context.$options, 'components', tag))
+		) {
       // component
+			// 根据自定义组件构造函数创建虚拟dom节点
       vnode = createComponent(Ctor, data, context, children, tag)
     } else {
       // unknown or unlisted namespaced elements
       // check at runtime because it may get assigned a namespace when its
       // parent normalizes children
+			// 否则创建自定义标签的vnode
       vnode = new VNode(
         tag, data, children,
         undefined, undefined, context
@@ -152,15 +170,26 @@ export function _createElement (
     }
   } else {
     // direct component options / constructor
+		// 如果tag不是字符串，则会被认为是组件
+		// 根据tag创建对应的组件虚拟dom节点
     vnode = createComponent(tag, data, context, children)
   }
+	// 如果虚拟dom节点是数组，则直接返回vnode
   if (Array.isArray(vnode)) {
     return vnode
-  } else if (isDef(vnode)) {
+  }
+	// 如果虚拟dom节点不为数组且不为空，则认为虚拟dom节点是对象类型
+	// 对虚拟dom做一些处理，然后直接返回虚拟dom节点
+	else if (isDef(vnode)) {
+		// 如果当前节点的根节点中有命名空间，即认为是svg标签或math标签，则为当前虚拟dom节点也添加该命名空间
     if (isDef(ns)) applyNS(vnode, ns)
+		// 将该节点的style/class响应式依赖添加到当前渲染对象的依赖目标中
     if (isDef(data)) registerDeepBindings(data)
+		// 返回虚拟dom节点
     return vnode
-  } else {
+  }
+	// 否则返回空虚拟dom节点
+	else {
     return createEmptyVNode()
   }
 }
