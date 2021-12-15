@@ -6389,17 +6389,29 @@
 
   var hooks = ['create', 'activate', 'update', 'remove', 'destroy'];
 
+  // 比较两个vnode是否相同
   function sameVnode (a, b) {
     return (
+  		// vnode的key相同
       a.key === b.key &&
+  		// 异步组件的设置相同
       a.asyncFactory === b.asyncFactory && (
+  			// vnode类型相同
         (
+  				// 标签名相同
           a.tag === b.tag &&
+  				// 注释节点的类型相同
           a.isComment === b.isComment &&
+  				// data的类型相同
           isDef(a.data) === isDef(b.data) &&
+  				// input类型在同一范围内
           sameInputType(a, b)
-        ) || (
+        ) ||
+  			// 是未成功加载的异步组件节点
+  			(
+  				// 旧异步dom节点还没有加载
           isTrue(a.isAsyncPlaceholder) &&
+  				// 新异步dom节点加载失败
           isUndef(b.asyncFactory.error)
         )
       )
@@ -6407,10 +6419,13 @@
   }
 
   function sameInputType (a, b) {
+  	// 如果不是input标签，直接返回
     if (a.tag !== 'input') { return true }
     var i;
+  	// vnode.data.attrs.type
     var typeA = isDef(i = a.data) && isDef(i = i.attrs) && i.type;
     var typeB = isDef(i = b.data) && isDef(i = i.attrs) && i.type;
+  	// input type相同或type类型在指定范围之内：text,number,password,search,email,tel,url
     return typeA === typeB || isTextInputType(typeA) && isTextInputType(typeB)
   }
 
@@ -6499,6 +6514,7 @@
       ownerArray, // 同级虚拟子节点数组
       index // 当前虚拟节点在子节点数组中的位置索引
     ) {
+  		// 如果vnode没有改变，并且不是根节点，则浅拷贝当前vnode保存起来
       if (isDef(vnode.elm) && isDef(ownerArray)) {
         // This vnode was used in a previous render!
         // now it's used as a new node, overwriting its elm would cause
@@ -6508,19 +6524,28 @@
         vnode = ownerArray[index] = cloneVNode(vnode);
       }
 
+  		// 更新是否作为根节点插入的标记，方便在过渡动画中使用
       vnode.isRootInsert = !nested; // for transition enter check
+  		// 尝试创建组件节点，并挂载到真实dom树，如果创建成功则直接返回
       if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
         return
       }
 
+  		// 获取vnode配置
       var data = vnode.data;
+  		// 获取vnode子节点
       var children = vnode.children;
+  		// 获取vnode标签名
       var tag = vnode.tag;
+  		// 如果vnode存在，则根据vnode创建真实dom插入真实dom节点
       if (isDef(tag)) {
+  			// 在开发环境中，如果vnode标签是未知标签，则提示警告信息
         {
+  				// 如果vnode是不进行编译的，则将该节点统计进不编译节点数
           if (data && data.pre) {
             creatingElmInVPre++;
           }
+  				// 如果是未知元素标签，则提示警告信息
           if (isUnknownElement$$1(vnode, creatingElmInVPre)) {
             warn(
               'Unknown custom element: <' + tag + '> - did you ' +
@@ -6531,28 +6556,44 @@
           }
         }
 
-        vnode.elm = vnode.ns
+  			// 根据vnode创建真实dom节点
+        vnode.elm =
+  			// 如果vnode是svg或math标签，则创建对应的svg/math标签	
+  			vnode.ns
           ? nodeOps.createElementNS(vnode.ns, tag)
+  				// 否则根据vnode标签创建真实dom节点
           : nodeOps.createElement(tag, vnode);
+  			// 设置样式作用域
         setScope(vnode);
 
         /* istanbul ignore if */
         {
+  				// 创建子节点真实dom
           createChildren(vnode, children, insertedVnodeQueue);
+  				// 如果存在vnode.data，则触发`create`钩子函数
           if (isDef(data)) {
             invokeCreateHooks(vnode, insertedVnodeQueue);
           }
+  				// 将vnode映射成的真实dom节点插入真实dom树中
           insert(parentElm, vnode.elm, refElm);
         }
-
+  			// 在开发环境中，如果vnode是不进行编译的，则当前不编译节点统计数减小1
         if (data && data.pre) {
           creatingElmInVPre--;
         }
-      } else if (isTrue(vnode.isComment)) {
+      }
+  		// 如果vnode是注释节点，则创建对应的真实注释节点，并插入dom树中
+  		else if (isTrue(vnode.isComment)) {
+  			// 根据vnode.text创建真实注释节点，并赋值给vnode.elm
         vnode.elm = nodeOps.createComment(vnode.text);
+  			// 将新建的注释节点插入dom中
         insert(parentElm, vnode.elm, refElm);
-      } else {
+      }
+  		// 否则认为vnode是文本节点，则创建对应的真实文本节点，并插入dom树中
+  		else {
+  			// 根据vnode.text创建真实文本节点，并赋值给vnode.elm
         vnode.elm = nodeOps.createTextNode(vnode.text);
+  			// 将新建的文本节点插入dom树中
         insert(parentElm, vnode.elm, refElm);
       }
     }
@@ -6621,12 +6662,17 @@
 
   	// 插入子节点
     function insert (parent, elm, ref$$1) {
+  		// 如果父节点不存在，则直接返回
       if (isDef(parent)) {
+  			// 如果相邻节点存在，则将真实dom节点插入相邻节点之前
         if (isDef(ref$$1)) {
+  				// 如果相邻节点的父节点与当前节点的父节点不同，则直接返回
           if (nodeOps.parentNode(ref$$1) === parent) {
             nodeOps.insertBefore(parent, elm, ref$$1);
           }
-        } else {
+        }
+  			// 否则将当前节点添加到父节点尾部
+  			else {
           nodeOps.appendChild(parent, elm);
         }
       }
@@ -6634,14 +6680,20 @@
 
   	// 创建子节点
     function createChildren (vnode, children, insertedVnodeQueue) {
+  		// 如果子节点是数组，则遍历子节点生成真实dom插入dom树中
       if (Array.isArray(children)) {
+  			// 如果当前环境是开发环境，则检查子节点中是否有重复节点
         {
           checkDuplicateKeys(children);
         }
+  			// 遍历子节点数组，根据子节点创建真实dom节点
         for (var i = 0; i < children.length; ++i) {
           createElm(children[i], insertedVnodeQueue, vnode.elm, null, true, children, i);
         }
-      } else if (isPrimitive(vnode.text)) {
+      }
+  		// 如果子节点不是数组类型（即认为子节点为空），且vnode.text是原始类型
+  		else if (isPrimitive(vnode.text)) {
+  			// 根据vnode.text创建文本子节点，插入dom树中
         nodeOps.appendChild(vnode.elm, nodeOps.createTextNode(String(vnode.text)));
       }
     }
@@ -6653,14 +6705,18 @@
       return isDef(vnode.tag)
     }
 
-  	// 触发`init`钩子的方法
+  	// 触发`create`钩子的方法
     function invokeCreateHooks (vnode, insertedVnodeQueue) {
+  		// 遍历内置的`create`钩子函数，全部触发
       for (var i$1 = 0; i$1 < cbs.create.length; ++i$1) {
         cbs.create[i$1](emptyNode, vnode);
       }
+  		// 触发vnode中的`create`钩子函数
       i = vnode.data.hook; // Reuse variable
       if (isDef(i)) {
+  			// 如果vnode中的`create`钩子函数存在，则触发vnode中的`create`钩子函数
         if (isDef(i.create)) { i.create(emptyNode, vnode); }
+  			// 将vnode推入插入节点队列
         if (isDef(i.insert)) { insertedVnodeQueue.push(vnode); }
       }
     }
@@ -6834,17 +6890,25 @@
 
   	// 检查虚拟dom节点的key是否重复
     function checkDuplicateKeys (children) {
+  		// 创建节点去重字典
       var seenKeys = {};
+  		// 遍历子节点，查找重复节点
       for (var i = 0; i < children.length; i++) {
+  			// 获取子节点引用
         var vnode = children[i];
+  			// 获取子节点key
         var key = vnode.key;
+  			// 如果没有子节点没有设置key值，则直接返回
         if (isDef(key)) {
+  				// 如果发现重复节点，则提示警告信息
           if (seenKeys[key]) {
             warn(
               ("Duplicate keys detected: '" + key + "'. This may cause an update error."),
               vnode.context
             );
-          } else {
+          }
+  				// 否则将当前key值加入去重字典
+  				else {
             seenKeys[key] = true;
           }
         }
@@ -6939,9 +7003,13 @@
     function invokeInsertHook (vnode, queue, initial) {
       // delay insert hooks for component root nodes, invoke them after the
       // element is really inserted
+  		// 如果是延迟加载的组件根元素，且有父节点，则不会立即调用vnode的`insert`钩子
       if (isTrue(initial) && isDef(vnode.parent)) {
+  			// 将父虚拟dom节点的等待插入节点设置为当前虚拟dom节点
         vnode.parent.data.pendingInsert = queue;
-      } else {
+      }
+  		// 如果不是延迟加载的组件根节点或没有父节点，则遍历`insertedVnodeQueue`，触发所有插入节点的`insert`钩子
+  		else {
         for (var i = 0; i < queue.length; ++i) {
           queue[i].data.hook.insert(queue[i]);
         }
@@ -7078,12 +7146,13 @@
 
   		// 标记初始化渲染为false
       var isInitialPatch = false;
-  		// 初始化插入节点为空数组
+  		// 初始化插入节点为空数组，将来会触发vnode的`insert`钩子函数
       var insertedVnodeQueue = [];
 
   		// 如果oldVnode不存在，则直接根据新的vnode创建真实dom节点
       if (isUndef(oldVnode)) {
         // empty mount (likely as component), create new root element
+  			// 调用vm.$mount但不传入参数时，会根据vnode创建真实dom树，但不会挂载到页面上，只会暂存到内存中
   			// 将初始化渲染标识置为true，表示只是创建出真实dom节点，并没有挂载到界面
         isInitialPatch = true;
   			// 根据新vnode，创建真实dom节点
@@ -7105,7 +7174,7 @@
             // mounting to a real element
             // check if this is server-rendered content and if we can perform
             // a successful hydration.
-  					// 如果oldVnode是元素节点，且有SSR标记，则删除元素的SSR标记，并将本次渲染的SSR标志置为true
+  					// 如果oldVnode是元素节点，且有SSR标记，则删除元素的SSR标记，并将本次渲染的SSR标识置为true
             if (oldVnode.nodeType === 1 && oldVnode.hasAttribute(SSR_ATTR)) {
               oldVnode.removeAttribute(SSR_ATTR);
               hydrating = true;
@@ -7132,26 +7201,27 @@
             }
             // either not server-rendered, or hydration failed.
             // create an empty node and replace it
-  					// 将oldVnode置空
+  					// 将作为真实dom的oldVnode转换为空的虚拟dom节点
             oldVnode = emptyNodeAt(oldVnode);
           }
 
           // replacing existing element
-  				// 保存oldVnode对应的真实dom节点
+  				// 获取oldVnode对应的真实dom节点
           var oldElm = oldVnode.elm;
-  				// 获取旧真实dom节点的父节点
+  				// 获取旧真实dom节点的父节点，为将来替换真实dom节点做准备
           var parentElm = nodeOps.parentNode(oldElm);
 
           // create new node
   				// 根据新vnode创建真实dom
           createElm(
-            vnode,
-            insertedVnodeQueue,
+            vnode, // 虚拟dom节点
+            insertedVnodeQueue, // 插入节点队列
             // extremely rare edge case: do not insert if old element is in a
             // leaving transition. Only happens when combining transition +
             // keep-alive + HOCs. (#4590)
-            oldElm._leaveCb ? null : parentElm,
-            nodeOps.nextSibling(oldElm)
+  					// 当dom节点正在执行transition过渡动画时，不会将创建的新真实dom节点挂载到父节点
+            oldElm._leaveCb ? null : parentElm, // 父节点
+            nodeOps.nextSibling(oldElm) // 相邻参考节点
           );
 
           // update parent placeholder node element, recursively
@@ -7185,11 +7255,11 @@
           }
 
           // destroy old node
-  				// 如果存在父节点，则删除oldVnode
+  				// 如果存在父节点真实dom，则删除oldVnode，并触发节点的`remove`钩子函数和Vue实例的`destory`钩子函数
           if (isDef(parentElm)) {
             removeVnodes([oldVnode], 0, 0);
           }
-  				// 如果是根虚拟dom节点，触发`destroy`钩子
+  				// 如果是根据虚拟dom节点，触发`destroy`钩子
   				else if (isDef(oldVnode.tag)) {
             invokeDestroyHook(oldVnode);
           }
