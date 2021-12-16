@@ -108,20 +108,28 @@ export function createPatchFunction (backend) {
 
 	// 创建节点删除方法
   function createRmCb (childElm, listeners) {
+		// 创建节点删除方法
     function remove () {
+			// 删除方法调用帧自减1
+			// 如果删除调用帧数量为0，说明删除方法已处于调用栈顶部，则弹栈执行删除节点
       if (--remove.listeners === 0) {
         removeNode(childElm)
       }
     }
+		// 将删除方法的调用帧记录到删除函数本身的`listeners`属性上
     remove.listeners = listeners
+		// 返回删除方法
     return remove
   }
 
-	// 删除节点方法
+	// 删除dom节点
   function removeNode (el) {
+		// 查找dom节点的父节点
     const parent = nodeOps.parentNode(el)
     // element may have already been removed due to v-html / v-text
+		// 如果父节点不存在，则直接返回
     if (isDef(parent)) {
+			// 从父节点中删除当前dom节点
       nodeOps.removeChild(parent, el)
     }
   }
@@ -331,6 +339,7 @@ export function createPatchFunction (backend) {
       if (isDef(ref)) {
 				// 如果相邻节点的父节点与当前节点的父节点不同，则直接返回
         if (nodeOps.parentNode(ref) === parent) {
+					// 将dom节点插入相邻节点之前
           nodeOps.insertBefore(parent, elm, ref)
         }
       }
@@ -349,7 +358,7 @@ export function createPatchFunction (backend) {
       if (process.env.NODE_ENV !== 'production') {
         checkDuplicateKeys(children)
       }
-			// 遍历子节点数组，根据子节点创建真实dom节点
+			// 遍历子节点数组，根据子节点创建真实dom节点，插入vnode映射成的真实dom
       for (let i = 0; i < children.length; ++i) {
         createElm(children[i], insertedVnodeQueue, vnode.elm, null, true, children, i)
       }
@@ -379,7 +388,7 @@ export function createPatchFunction (backend) {
     if (isDef(i)) {
 			// 如果vnode中的`create`钩子函数存在，则触发vnode中的`create`钩子函数
       if (isDef(i.create)) i.create(emptyNode, vnode)
-			// 将vnode推入插入节点队列
+			// 如果vnode中的`insert`钩子函数存在，将vnode推入插入节点队列
       if (isDef(i.insert)) insertedVnodeQueue.push(vnode)
     }
   }
@@ -413,7 +422,9 @@ export function createPatchFunction (backend) {
 
 	// 为父节点添加子节点
   function addVnodes (parentElm, refElm, vnodes, startIdx, endIdx, insertedVnodeQueue) {
+		// 从子节点数组的指定开始位置和指定结束位置遍历子节点数组
     for (; startIdx <= endIdx; ++startIdx) {
+			// 根据子节点创建新dom节点，插入指定的位置
       createElm(vnodes[startIdx], insertedVnodeQueue, parentElm, refElm, false, vnodes, startIdx)
     }
   }
@@ -433,73 +444,111 @@ export function createPatchFunction (backend) {
     }
   }
 
-	// 删除虚拟dom节点vnode
+	// 从父节点中删除子节点
   function removeVnodes (vnodes, startIdx, endIdx) {
+		// 从子节点数组的指定开始位置和结束位置遍历子节点
     for (; startIdx <= endIdx; ++startIdx) {
+			// 获取子节点引用
       const ch = vnodes[startIdx]
+			// 如果子节点为空，则跳过本次循环
       if (isDef(ch)) {
+				// 如果是元素节点，则删除元素节点
         if (isDef(ch.tag)) {
+					// 1. 触发模块内置的`remove`钩子函数
+					// 2. 触发节点上的`remove`钩子函数
+					// 3. 删除节点映射的真实dom
           removeAndInvokeRemoveHook(ch)
+					// 4. 触发模块内置的`destroy`钩子函数
+					// 5. 触发节点上的`destroy`钩子函数
           invokeDestroyHook(ch)
-        } else { // Text node
+        }
+				// 如果是文本节点，直接删除节点映射的文本节点
+				else { // Text node
           removeNode(ch.elm)
         }
       }
     }
   }
 
-	// 删除真实dom节点，并触发`remove`钩子
+	// 删除节点，并触发`remove`钩子
   function removeAndInvokeRemoveHook (vnode, rm) {
+		// 非动态元素v-html/v-text，则先触发`remove`钩子函数，然后删除元素
     if (isDef(rm) || isDef(vnode.data)) {
       let i
+			// 记录删除方法的调用栈深度（调用帧数量），初始化为模块内置的`remove`钩子函数的数量 + 1
       const listeners = cbs.remove.length + 1
+			// 如果删除方法不为空，则说明当前处于递归调用中
+			// 删除方法的调用帧数量自增当前新增的调用栈深度
       if (isDef(rm)) {
         // we have a recursively passed down rm callback
         // increase the listeners count
         rm.listeners += listeners
-      } else {
+      }
+			// 如果删除方法为空，则创建删除方法，并为删除方法添加调用帧数量
+			else {
         // directly removing
         rm = createRmCb(vnode.elm, listeners)
       }
       // recursively invoke hooks on child component root node
+			// 如果节点有子组件节点，则递归触发子节点的`remove`钩子函数
       if (isDef(i = vnode.componentInstance) && isDef(i = i._vnode) && isDef(i.data)) {
         removeAndInvokeRemoveHook(i, rm)
       }
+			// 触发模块内置的`remove`钩子函数
       for (i = 0; i < cbs.remove.length; ++i) {
         cbs.remove[i](vnode, rm)
       }
+			// 如果节点上注册了`remove`钩子函数，触发节点上挂载的`remove`钩子函数
       if (isDef(i = vnode.data.hook) && isDef(i = i.remove)) {
         i(vnode, rm)
-      } else {
+      }
+			// 否则，调用删除方法
+			else {
         rm()
       }
-    } else {
+    }
+		// 如果是动态节点元素（v-html/v-text），则直接删除当前节点映射的真实dom
+		else {
       removeNode(vnode.elm)
     }
   }
 
-	// 更新子节点
-  function updateChildren (parentElm, oldCh, newCh, insertedVnodeQueue, removeOnly) {
-    let oldStartIdx = 0
-    let newStartIdx = 0
-    let oldEndIdx = oldCh.length - 1
-    let oldStartVnode = oldCh[0]
-    let oldEndVnode = oldCh[oldEndIdx]
-    let newEndIdx = newCh.length - 1
-    let newStartVnode = newCh[0]
-    let newEndVnode = newCh[newEndIdx]
-    let oldKeyToIdx, idxInOld, vnodeToMove, refElm
+	// 对比合并子节点（运用diff算法）
+  function updateChildren (
+		parentElm, // 父节点dom
+		oldCh, // 旧节点
+		newCh, // 新节点
+		insertedVnodeQueue, // 插入节点队列
+		removeOnly // 只执行删除操作
+	) {
+    let oldStartIdx = 0 // 旧开始节点索引
+    let newStartIdx = 0 // 新开始索引
+    let oldEndIdx = oldCh.length - 1 // 旧结束索引
+    let oldStartVnode = oldCh[0] // 旧开始子节点
+    let oldEndVnode = oldCh[oldEndIdx] // 旧结束子节点
+    let newEndIdx = newCh.length - 1 // 新结束索引
+    let newStartVnode = newCh[0] // 新开始子节点
+    let newEndVnode = newCh[newEndIdx] // 新结束索引
+    let oldKeyToIdx, // 旧子节点key映射
+			idxInOld, // 新子节点在旧子节点数组中的位置
+			vnodeToMove, // 需要移动位置的旧子节点
+			refElm // 插入新子节点的参考子节点
 
     // removeOnly is a special flag used only by <transition-group>
     // to ensure removed elements stay in correct relative positions
     // during leaving transitions
+		// 节点可移动标识
     const canMove = !removeOnly
 
+		// 开发环境下检查新子节点是否重复
     if (process.env.NODE_ENV !== 'production') {
       checkDuplicateKeys(newCh)
     }
 
+		// 在新旧子节点数组长度之内进行遍历
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+			// 处理旧子节点为空的情况
+			// 如果旧开始子节点为空，则旧开始节点索引自增1，旧开始节点指针右移
       if (isUndef(oldStartVnode)) {
         oldStartVnode = oldCh[++oldStartIdx] // Vnode has been moved left
       } else if (isUndef(oldEndVnode)) {
@@ -586,24 +635,30 @@ export function createPatchFunction (backend) {
     }
   }
 
-	// 合并虚拟dom节点，并将变化渲染到真实dom
+	// 合并虚拟dom节点，并将差异渲染到真实dom
   function patchVnode (
-    oldVnode,
-    vnode,
-    insertedVnodeQueue,
-    ownerArray,
-    index,
-    removeOnly
+    oldVnode, // 旧虚拟dom节点
+    vnode, // 新虚拟dom节点
+    insertedVnodeQueue, // 插入节点队列
+    ownerArray, // 所属子节点数组
+    index, // 移动节点的目的地位置索引
+    removeOnly // 是否只进行删除操作
   ) {
+		// 如果新旧虚拟dom节点是同一个节点，则直接返回
     if (oldVnode === vnode) {
       return
     }
-
+		// 如果当前节点已经渲染过而且在递归调用中
     if (isDef(vnode.elm) && isDef(ownerArray)) {
       // clone reused vnode
+			// 浅拷贝当前虚拟dom节点，赋值给当前节点，同时移动到指定的位置
+			// 1. 浅拷贝新节点
+			// 2. 将节点移动到新节点在子节点数组中的位置
+			// 3. 赋值给当前节点保存起来
       vnode = ownerArray[index] = cloneVNode(vnode)
     }
 
+		// 沿用旧节点渲染的dom节点
     const elm = vnode.elm = oldVnode.elm
 
     if (isTrue(oldVnode.isAsyncPlaceholder)) {
@@ -628,6 +683,7 @@ export function createPatchFunction (backend) {
       return
     }
 
+		// 如果vnode上有`prepatch`钩子函数，则触发该钩子函数
     let i
     const data = vnode.data
     if (isDef(data) && isDef(i = data.hook) && isDef(i = i.prepatch)) {
@@ -637,26 +693,43 @@ export function createPatchFunction (backend) {
     const oldCh = oldVnode.children
     const ch = vnode.children
     if (isDef(data) && isPatchable(vnode)) {
+			// 触发内部模块中的`update`钩子函数，操作节点的属性/样式/事件...
       for (i = 0; i < cbs.update.length; ++i) cbs.update[i](oldVnode, vnode)
+			// 触发vnode上的`update`钩子函数
       if (isDef(i = data.hook) && isDef(i = i.update)) i(oldVnode, vnode)
     }
+		// 如果新虚拟节点中没有文本子节点
     if (isUndef(vnode.text)) {
+			// 新旧虚拟节点都有子节点，则使用diff算法对比新旧节点，将差异渲染到dom树
       if (isDef(oldCh) && isDef(ch)) {
+				// 新旧虚拟节点的子节点不相同，则对比新旧子节点，将差异渲染到dom树
         if (oldCh !== ch) updateChildren(elm, oldCh, ch, insertedVnodeQueue, removeOnly)
-      } else if (isDef(ch)) {
+      }
+			// 新子节点存在，旧子节点不存在，则创建新子节点dom，插入dom树中
+			else if (isDef(ch)) {
+				// 开发环境中检查子节点是否重复
         if (process.env.NODE_ENV !== 'production') {
           checkDuplicateKeys(ch)
         }
+				// 如果旧虚拟节点有文本子节点，则删除真实dom节点上的文本子节点
         if (isDef(oldVnode.text)) nodeOps.setTextContent(elm, '')
-        addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue)
-      } else if (isDef(oldCh)) {
+        // 根据新虚拟子节点创建真实dom，插入dom树中
+				addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue)
+      }
+			// 新子节点不存在，旧子节点存在，则删除真实dom节点的所有子节点
+			else if (isDef(oldCh)) {
         removeVnodes(oldCh, 0, oldCh.length - 1)
-      } else if (isDef(oldVnode.text)) {
+      }
+			// 如果新旧子节点都不存在，但旧节点中有文本子节点，则删除文本节点的内容
+			else if (isDef(oldVnode.text)) {
         nodeOps.setTextContent(elm, '')
       }
-    } else if (oldVnode.text !== vnode.text) {
+    }
+		// 如果新虚拟节点有文本子节点，且和旧虚拟节点的文本子节点不同，则根据新节点的文本子节点插入dom树
+		else if (oldVnode.text !== vnode.text) {
       nodeOps.setTextContent(elm, vnode.text)
     }
+		// 新旧节点对比合并结束后，触发新节点上的`postpatch`钩子函数
     if (isDef(data)) {
       if (isDef(i = data.hook) && isDef(i = i.postpatch)) i(oldVnode, vnode)
     }
