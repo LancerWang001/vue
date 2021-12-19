@@ -2,42 +2,36 @@
 <html lang="en">
 
 <head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Debug</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug</title>
 </head>
 
 <body>
-	<div id="app">
-		{{ reversedMessage }}
-		<hr />
-		{{ user.fullName }}
-	</div>
-	<script src="../../dist/vue.runtime.js"></script>
-	<script>
-		// 如果同时设置template和render此时会渲染什么？
-		const vm = new Vue({
-			el: '#app',
-			render(h) {
-				// h(tag, data, children)
-				// tag除了支持标签名以外，还可以传递Vue组件
-				// h('h1', this.msg)
-				// h('h1', { domProps: { innerHTML: this.msg } })
-				// h('h1', { attrs: { id: 'title' } }, this.msg)
-				const vnode = h(
-					'h1',
-					{ attrs: { id: 'title' } },
-					this.msg
-				);
-				console.log(vnode)
-				return vnode;
-			},
-			data: {
-				msg: 'Hello Vue'
-			}
-		});
-	</script>
+    <div id="app">
+        <h1>Vue<span>模板编译过程</span></h1>
+        <p>{{ msg }}</p>
+        <comp @myclick="handler"></comp>
+    </div>
+    <script src="../../dist/vue.js"></script>
+    <script>
+        Vue.component('comp', {
+            template: '<div>I am a comp</div>'
+        })
+        const vm = new Vue({
+            el: '#app',
+            data: {
+                msg: 'Hello Compiler'
+            },
+            methods: {
+                handler() {
+                    console.log('Test')
+                }
+            }
+        });
+        console.log(vm.$options.render)
+    </script>
 </body>
 
 </html>

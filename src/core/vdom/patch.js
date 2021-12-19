@@ -548,54 +548,109 @@ export function createPatchFunction (backend) {
 		// 在新旧子节点数组长度之内进行遍历
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
 			// 处理旧子节点为空的情况
-			// 如果旧开始子节点为空，则旧开始节点索引自增1，旧开始节点指针右移
+			// 如果旧开始子节点为空，则旧开始子节点索引自增1，旧开始节点指针右移
       if (isUndef(oldStartVnode)) {
+        // 旧开始子节点索引自增1
+        // 旧开始节点指针右移
         oldStartVnode = oldCh[++oldStartIdx] // Vnode has been moved left
-      } else if (isUndef(oldEndVnode)) {
+      }
+      // 如果旧结束子节点为空，则旧结束子节点索引自减1，旧结束节点指针左移
+      else if (isUndef(oldEndVnode)) {
+        // 旧结束子节点索引自减
+        // 旧结束子节点指针左移
         oldEndVnode = oldCh[--oldEndIdx]
-      } else if (sameVnode(oldStartVnode, newStartVnode)) {
+      }
+      // 如果旧开始子节点和新开始子节点是相同节点，则合并新旧子节点
+      else if (sameVnode(oldStartVnode, newStartVnode)) {
+        // 合并新旧开始子节点，并将差异渲染到真实dom
         patchVnode(oldStartVnode, newStartVnode, insertedVnodeQueue, newCh, newStartIdx)
+        // 旧开始子节点索引自增
+        // 旧开始子节点指针右移
         oldStartVnode = oldCh[++oldStartIdx]
+        // 新开始子节点索引自增
+        // 新开始子节点指针右移
         newStartVnode = newCh[++newStartIdx]
-      } else if (sameVnode(oldEndVnode, newEndVnode)) {
+      }
+      // 如果旧结束子节点与新结束子节点是相同节点，则合并新旧子节点
+      else if (sameVnode(oldEndVnode, newEndVnode)) {
+        // 合并新旧结束子节点，并将差异渲染到真实dom
         patchVnode(oldEndVnode, newEndVnode, insertedVnodeQueue, newCh, newEndIdx)
+        // 旧结束子节点索引自减
+        // 旧结束子节点指针左移
         oldEndVnode = oldCh[--oldEndIdx]
+        // 新结束子节点索引自减
+        // 新结束子节点指针左移
         newEndVnode = newCh[--newEndIdx]
-      } else if (sameVnode(oldStartVnode, newEndVnode)) { // Vnode moved right
+      }
+      // 如果旧开始子节点和新结束子节点是相同节点，则合并新旧子节点
+      else if (sameVnode(oldStartVnode, newEndVnode)) { // Vnode moved right
+        // 合并新旧子节点，并将差异渲染真实dom
         patchVnode(oldStartVnode, newEndVnode, insertedVnodeQueue, newCh, newEndIdx)
+        // 将合并后的子节点插入旧子节点数组末尾
         canMove && nodeOps.insertBefore(parentElm, oldStartVnode.elm, nodeOps.nextSibling(oldEndVnode.elm))
+        // 旧开始子节点索引自增
+        // 旧开始子节点指针右移
         oldStartVnode = oldCh[++oldStartIdx]
+        // 新结束子节点索引自减
+        // 新结束子节点指针左移
         newEndVnode = newCh[--newEndIdx]
-      } else if (sameVnode(oldEndVnode, newStartVnode)) { // Vnode moved left
+      }
+      // 如果旧结束子节点和新开始子节点是相同节点，则合并新旧子节点
+      else if (sameVnode(oldEndVnode, newStartVnode)) { // Vnode moved left
+        // 合并新旧子节点，并将差异渲染到真实dom
         patchVnode(oldEndVnode, newStartVnode, insertedVnodeQueue, newCh, newStartIdx)
+        // 将合并后的子节点插入旧子节点数组开头
         canMove && nodeOps.insertBefore(parentElm, oldEndVnode.elm, oldStartVnode.elm)
+        // 旧结束子节点索引自减
+        // 旧结束子节点指针左移
         oldEndVnode = oldCh[--oldEndIdx]
+        // 新开始子节点索引自增
+        // 新开始子节点指针右移
         newStartVnode = newCh[++newStartIdx]
-      } else {
+      }
+      // 如果新旧开始结束子节点都不相同，则从旧子节点数组中查找与新子节点key值相同的子节点，插入新子节点对应的位置；如果找不到，则在旧开始子节点对应的位置新建真实dom
+      else {
+        // 获取旧子节点key映射
         if (isUndef(oldKeyToIdx)) oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx)
+        // 获取新开始子节点在旧子节点key映射中的位置
         idxInOld = isDef(newStartVnode.key)
           ? oldKeyToIdx[newStartVnode.key]
           : findIdxInOld(newStartVnode, oldCh, oldStartIdx, oldEndIdx)
+        // 如果新开始子节点key值在旧子节点数组中不存在，则在旧开始子节点对应的位置上根据新子节点新建真实dom
         if (isUndef(idxInOld)) { // New element
           createElm(newStartVnode, insertedVnodeQueue, parentElm, oldStartVnode.elm, false, newCh, newStartIdx)
-        } else {
+        }
+        // 如果新子节点key值在旧子节点数组中存在，则将旧子节点对应的真实dom移动到旧开始子节点对应的位置上
+        else {
+          // 获取key值相同的旧子节点
           vnodeToMove = oldCh[idxInOld]
+          // 如果新旧子节点是相同节点，则合并新旧子节点
           if (sameVnode(vnodeToMove, newStartVnode)) {
+            // 合并新旧子节点
             patchVnode(vnodeToMove, newStartVnode, insertedVnodeQueue, newCh, newStartIdx)
+            // 清空旧子节点在旧子节点中对应的位置
             oldCh[idxInOld] = undefined
+            // 将旧子节点移动到旧子节点数组的开头
             canMove && nodeOps.insertBefore(parentElm, vnodeToMove.elm, oldStartVnode.elm)
-          } else {
+          }
+          // 如果新旧子节点不是相同节点，则在旧开始子节点所在的位置根据新子节点新建真实dom
+          else {
             // same key but different element. treat as new element
             createElm(newStartVnode, insertedVnodeQueue, parentElm, oldStartVnode.elm, false, newCh, newStartIdx)
           }
         }
+        // 新开始子节点索引自增
+        // 新开始子节点指针右移
         newStartVnode = newCh[++newStartIdx]
       }
     }
+    // 迭代结束后，如果新子节点还有剩余，则将剩余的新子节点插入迭代结束的位置
     if (oldStartIdx > oldEndIdx) {
       refElm = isUndef(newCh[newEndIdx + 1]) ? null : newCh[newEndIdx + 1].elm
       addVnodes(parentElm, refElm, newCh, newStartIdx, newEndIdx, insertedVnodeQueue)
-    } else if (newStartIdx > newEndIdx) {
+    }
+    // 迭代结束后，如果旧子节点还有剩余，则将剩余的旧子节点全部删除
+    else if (newStartIdx > newEndIdx) {
       removeVnodes(oldCh, oldStartIdx, oldEndIdx)
     }
   }

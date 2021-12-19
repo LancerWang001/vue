@@ -12,19 +12,19 @@ import { bindObjectListeners } from './bind-object-listeners'
 import { resolveScopedSlots } from './resolve-scoped-slots'
 import { bindDynamicKeys, prependModifier } from './bind-dynamic-keys'
 
-export function installRenderHelpers (target: any) {
+export function installRenderHelpers(target: any) {
   target._o = markOnce
   target._n = toNumber
-  target._s = toString
+  target._s = toString // 序列化值的方法
   target._l = renderList
   target._t = renderSlot
   target._q = looseEqual
   target._i = looseIndexOf
-  target._m = renderStatic
+  target._m = renderStatic // 处理静态内容的函数
   target._f = resolveFilter
   target._k = checkKeyCodes
   target._b = bindObjectProps
-  target._v = createTextVNode
+  target._v = createTextVNode // 创建文本VNode节点
   target._e = createEmptyVNode
   target._u = resolveScopedSlots
   target._g = bindObjectListeners
