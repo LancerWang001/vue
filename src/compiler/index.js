@@ -22,6 +22,7 @@ export const createCompiler = createCompilerCreator(function baseCompile(
   // 把抽象语法树生成字符串形式的 js 代码
   const code = generate(ast, options)
   return {
+    // 抽象语法树
     ast,
     // 渲染函数
     render: code.render,

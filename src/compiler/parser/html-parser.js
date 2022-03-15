@@ -8,28 +8,44 @@
  * Original code by Erik Arvidsson (MPL-1.1 OR Apache-2.0 OR GPL-2.0-or-later)
  * http://erik.eae.net/simplehtmlparser/simplehtmlparser.js
  */
+// 核心原理借鉴了`simple-html-parser`库
 
 import { makeMap, no } from 'shared/util'
 import { isNonPhrasingTag } from 'web/compiler/util'
 import { unicodeRegExp } from 'core/util/lang'
 
 // Regular Expressions for parsing tags and attributes
+// 解析标签和属性的正则表达式
+
+// 属性的正则表达式 name="zhangsan"
 const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
+// 动态属性的正则表达式 @[attr]="zhangsan"
 const dynamicArgAttribute = /^\s*((?:v-[\w-]+:|@|:|#)\[[^=]+?\][^\s"'<>\/=]*)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/
+// 标签名正则表达式
 const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z${unicodeRegExp.source}]*`
+// 修饰符正则表达式 Tag:decorator
 const qnameCapture = `((?:${ncname}\\:)?${ncname})`
+// 开始标签头部正则表达式 <Start:decorator
 const startTagOpen = new RegExp(`^<${qnameCapture}`)
+// 开始标签的尾部正则表达式 >
 const startTagClose = /^\s*(\/?)>/
+// 结束标签的正则表达式
 const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`)
+// html文档声明的正则表达式
 const doctype = /^<!DOCTYPE [^>]+>/i
 // #7298: escape - to avoid being passed as HTML comment when inlined in page
+// 注释的正则表达式
 const comment = /^<!\--/
+// 条件注释的正则表达式
 const conditionalComment = /^<!\[/
 
 // Special Elements (can contain anything)
+// 子节点是纯文本节点的标签
 export const isPlainTextElement = makeMap('script,style,textarea', true)
+// 正则表达式缓存
 const reCache = {}
 
+// html转义符映射
 const decodingMap = {
   '&lt;': '<',
   '&gt;': '>',
@@ -39,21 +55,47 @@ const decodingMap = {
   '&#9;': '\t',
   '&#39;': "'"
 }
+// 属性中的html转义字符正则表达式
 const encodedAttr = /&(?:lt|gt|quot|amp|#39);/g
+// 属性中需要换行的html转义字符正则表达式
 const encodedAttrWithNewLines = /&(?:lt|gt|quot|amp|#39|#10|#9);/g
 
 // #5992
+// 忽略换行的标签
 const isIgnoreNewlineTag = makeMap('pre,textarea', true)
+/**
+ * @name shouldIgnoreFirstNewline
+ * @description 是否在标签子节点中忽略第一个换行符
+ * @param {string} tag 标签名
+ * @param {string} html html字符串
+ * @returns {boolean} 是否忽略第一个换行
+ */
 const shouldIgnoreFirstNewline = (tag, html) => tag && isIgnoreNewlineTag(tag) && html[0] === '\n'
 
-function decodeAttr (value, shouldDecodeNewlines) {
+/**
+ * @name decodeAttr
+ * @description 还原html转义字符
+ * @param {string} value 被解析的属性值
+ * @param {boolean} shouldDecodeNewlines 是否应该解析换行
+ * @returns {string} 还原html转义后的字符
+ */
+function decodeAttr(value, shouldDecodeNewlines) {
   const re = shouldDecodeNewlines ? encodedAttrWithNewLines : encodedAttr
   return value.replace(re, match => decodingMap[match])
 }
 
-export function parseHTML (html, options) {
+/**
+ * @name parseHTML
+ * @description 解析html字符串
+ * @param {string} html 
+ * @param {Object} options 
+ */
+export function parseHTML(html, options) {
+  // 创建标签元素栈
   const stack = []
+  // 获取是否以HTML规范约束标签解析的标识
   const expectHTML = options.expectHTML
+  // 
   const isUnaryTag = options.isUnaryTag || no
   const canBeLeftOpenTag = options.canBeLeftOpenTag || no
   let index = 0
@@ -179,12 +221,12 @@ export function parseHTML (html, options) {
   // Clean up any remaining tags
   parseEndTag()
 
-  function advance (n) {
+  function advance(n) {
     index += n
     html = html.substring(n)
   }
 
-  function parseStartTag () {
+  function parseStartTag() {
     const start = html.match(startTagOpen)
     if (start) {
       const match = {
@@ -209,7 +251,7 @@ export function parseHTML (html, options) {
     }
   }
 
-  function handleStartTag (match) {
+  function handleStartTag(match) {
     const tagName = match.tagName
     const unarySlash = match.unarySlash
 
@@ -252,7 +294,7 @@ export function parseHTML (html, options) {
     }
   }
 
-  function parseEndTag (tagName, start, end) {
+  function parseEndTag(tagName, start, end) {
     let pos, lowerCasedTagName
     if (start == null) start = index
     if (end == null) end = index
