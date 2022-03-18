@@ -6,12 +6,12 @@ import { parseFilters } from './parser/filter-parser'
 type Range = { start?: number, end?: number };
 
 /* eslint-disable no-unused-vars */
-export function baseWarn (msg: string, range?: Range) {
+export function baseWarn(msg: string, range?: Range) {
   console.error(`[Vue compiler]: ${msg}`)
 }
 /* eslint-enable no-unused-vars */
 
-export function pluckModuleFunction<F: Function> (
+export function pluckModuleFunction<F: Function>(
   modules: ?Array<Object>,
   key: string
 ): Array<F> {
@@ -20,12 +20,12 @@ export function pluckModuleFunction<F: Function> (
     : []
 }
 
-export function addProp (el: ASTElement, name: string, value: string, range?: Range, dynamic?: boolean) {
+export function addProp(el: ASTElement, name: string, value: string, range?: Range, dynamic?: boolean) {
   (el.props || (el.props = [])).push(rangeSetItem({ name, value, dynamic }, range))
   el.plain = false
 }
 
-export function addAttr (el: ASTElement, name: string, value: any, range?: Range, dynamic?: boolean) {
+export function addAttr(el: ASTElement, name: string, value: any, range?: Range, dynamic?: boolean) {
   const attrs = dynamic
     ? (el.dynamicAttrs || (el.dynamicAttrs = []))
     : (el.attrs || (el.attrs = []))
@@ -34,12 +34,12 @@ export function addAttr (el: ASTElement, name: string, value: any, range?: Range
 }
 
 // add a raw attr (use this in preTransforms)
-export function addRawAttr (el: ASTElement, name: string, value: any, range?: Range) {
+export function addRawAttr(el: ASTElement, name: string, value: any, range?: Range) {
   el.attrsMap[name] = value
   el.attrsList.push(rangeSetItem({ name, value }, range))
 }
 
-export function addDirective (
+export function addDirective(
   el: ASTElement,
   name: string,
   rawName: string,
@@ -60,13 +60,13 @@ export function addDirective (
   el.plain = false
 }
 
-function prependModifierMarker (symbol: string, name: string, dynamic?: boolean): string {
+function prependModifierMarker(symbol: string, name: string, dynamic?: boolean): string {
   return dynamic
     ? `_p(${name},"${symbol}")`
     : symbol + name // mark the event as captured
 }
 
-export function addHandler (
+export function addHandler(
   el: ASTElement,
   name: string,
   value: string,
@@ -149,7 +149,7 @@ export function addHandler (
   el.plain = false
 }
 
-export function getRawBindingAttr (
+export function getRawBindingAttr(
   el: ASTElement,
   name: string
 ) {
@@ -158,7 +158,7 @@ export function getRawBindingAttr (
     el.rawAttrsMap[name]
 }
 
-export function getBindingAttr (
+export function getBindingAttr(
   el: ASTElement,
   name: string,
   getStatic?: boolean
@@ -180,28 +180,45 @@ export function getBindingAttr (
 // doesn't get processed by processAttrs.
 // By default it does NOT remove it from the map (attrsMap) because the map is
 // needed during codegen.
-export function getAndRemoveAttr (
+/**
+ * @name getAndRemoveAttr
+ * @description 从 attrsList 删除某个属性，并返回该属性的值
+ * @param {ASTElement} el 当前节点元素
+ * @param {string} name 属性名
+ * @param {boolean} removeFromMap 是否从属性映射中删除当前属性
+ * @returns {string} 删除的属性值
+ */
+export function getAndRemoveAttr(
   el: ASTElement,
   name: string,
   removeFromMap?: boolean
 ): ?string {
+  /** @const {string} val 删除属性的值 */
   let val
+  // 如果属性映射不为空，则用 val 接收属性值
   if ((val = el.attrsMap[name]) != null) {
+    /** @const {ASTAttr[]} list 节点属性列表 */
     const list = el.attrsList
+    // 循环当前元素的属性映射，找到指定的属性在属性列表中的位置，将该属性从属性列表中删除
     for (let i = 0, l = list.length; i < l; i++) {
+      // 查找到指定属性在属性列表中的位置
       if (list[i].name === name) {
+        // 从属性列表中删除该属性
         list.splice(i, 1)
+        // 跳出循环
         break
       }
     }
   }
+  // 如果传递了 removeFromMap 参数，则从当前节点元素的属性映射中删除该属性
   if (removeFromMap) {
     delete el.attrsMap[name]
   }
+  // 返回属性值
   return val
 }
 
-export function getAndRemoveAttrByRegex (
+export function getAndRemoveAttrByRegex(
   el: ASTElement,
   name: RegExp
 ) {
@@ -215,7 +232,7 @@ export function getAndRemoveAttrByRegex (
   }
 }
 
-function rangeSetItem (
+function rangeSetItem(
   item: any,
   range?: { start?: number, end?: number }
 ) {
