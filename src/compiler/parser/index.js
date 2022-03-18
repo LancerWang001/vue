@@ -155,9 +155,9 @@ export function parse(
   const preserveWhitespace = options.preserveWhitespace !== false
   // 获取空行选项
   const whitespaceOption = options.whitespace
-  // 根元素 ast
+  // 声明根节点元素 ast
   let root
-  // 当前父节点 ast
+  // 声明当前父节点元素 ast
   let currentParent
   // 当前节点是否不需要编译（v-pre）
   let inVPre = false
@@ -328,7 +328,7 @@ export function parse(
      * @name start
      * @description 解析开始标签
      * @param {string} tag 开始标签名
-     * @param {Attr[]} attrs 标签属性列表
+     * @param {ASTAttr[]} attrs 标签属性列表
      * @param {boolean} unary 是否是单标签
      * @param {number} start 开始标签解析起始位置
      * @param {number} end 开始标签解析结束位置
@@ -876,12 +876,23 @@ function processIfConditions(el, parent) {
   }
 }
 
+/**
+ * @name findPrevElement
+ * @description 获取当前节点元素的上一个节点元素
+ * @param {ASTElement[]} children 当前父节点元素的子节点数组
+ * @returns {ASTElement} 当前节点元素的上一个节点元素
+ */
 function findPrevElement(children: Array<any>): ASTElement | void {
+  // 获取当前父节点元素的子节点数组长度
   let i = children.length
+  // 循环子节点数组，找到上一个元素节点并返回
   while (i--) {
+    // 检查节点类型是否为元素，如果是元素就直接返回
     if (children[i].type === 1) {
       return children[i]
-    } else {
+    }
+    // 否则就将该节点从子节点数组中删除，并在开发环境中提示警告信息
+    else {
       if (process.env.NODE_ENV !== 'production' && children[i].text !== ' ') {
         warn(
           `text "${children[i].text.trim()}" between v-if and v-else(-if) ` +
@@ -1089,17 +1100,23 @@ function processSlotContent(el) {
  * @returns {{ name: strig; dynamic: boolean }} 插槽名称对象
  */
 function getSlotName(binding) {
+  // 将 v-slot 指令中的 v-slot 去掉，只留下插槽名
   let name = binding.name.replace(slotRE, '')
   if (!name) {
+    // 如果插槽名不存在，且没有使用 v-slot 简写，则为插槽名赋默认值'default'
     if (binding.name[0] !== '#') {
       name = 'default'
-    } else if (process.env.NODE_ENV !== 'production') {
+    }
+    // 否则在开发环境中提示警告信息
+    else if (process.env.NODE_ENV !== 'production') {
       warn(
         `v-slot shorthand syntax requires a slot name.`,
         binding
       )
     }
   }
+  // 如果插槽名是动态的，则清除掉插槽名两侧的'[]'符号
+  // 返回插槽名与动态插槽标识
   return dynamicArgRE.test(name)
     // dynamic [name]
     ? { name: name.slice(1, -1), dynamic: true }
@@ -1173,7 +1190,7 @@ function processAttrs(el) {
     name = rawName = list[i].name
     // 获取属性值
     value = list[i].value
-    // 如果当前属性使用了指令
+    // 如果当前属性使用了指令，则根据指令类型生成相应的逻辑代码
     if (dirRE.test(name)) {
       // mark element as dynamic
       // 标记当前节点元素是动态元素

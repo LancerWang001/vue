@@ -87,8 +87,8 @@ function decodeAttr(value, shouldDecodeNewlines) {
 /**
  * @name parseHTML
  * @description 解析html字符串
- * @param {string} html 
- * @param {Object} options 
+ * @param {string} html html 字符串
+ * @param {Record<string, any>} options 解析参数
  */
 export function parseHTML(html, options) {
   // 创建标签元素栈
@@ -340,7 +340,7 @@ export function parseHTML(html, options) {
 
   /**
    * @name handleStartTag
-   * @description 处理结束标签的处理结果
+   * @description 处理开始标签的解析结果
    * @param {Record<string, any>} match 开始标签解析结果
    */
   function handleStartTag(match) {
