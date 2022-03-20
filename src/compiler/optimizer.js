@@ -85,7 +85,7 @@ function markStatic(node: ASTNode) {
         node.static = false
       }
     }
-    // 如果节点有 if 条件判断分支，则循环子节点数组，为每个分支节点添加是否静态的标记
+    // 如果节点有条件渲染节点，则循环子节点数组，为每个分支节点添加是否静态的标记
     if (node.ifConditions) {
       // 循环子节点数组，为每个分支节点添加是否是静态的标记
       for (let i = 1, l = node.ifConditions.length; i < l; i++) {
@@ -102,14 +102,24 @@ function markStatic(node: ASTNode) {
   }
 }
 
+/**
+ * @name markStaticRoots
+ * @description 标记静态根节点的方法
+ * @param {ASTNode} node 根节点
+ * @param {boolean} isInFor 是否是 v-for 的直接子节点
+ */
 function markStaticRoots(node: ASTNode, isInFor: boolean) {
+  // 如果不是元素节点，则直接跳过
   if (node.type === 1) {
+    // 如果是静态的节点或只渲染一次的节点，则为节点添加处于 v-for 指令的标记
     if (node.static || node.once) {
       node.staticInFor = isInFor
     }
     // For a node to qualify as a static root, it should have children that
     // are not just static text. Otherwise the cost of hoisting out will
     // outweigh the benefits and it's better off to just always render it fresh.
+    // 如果一个元素节点只有一个文本子节点的话，则会将节点标记为非静态根节点以节约性能（优化成本大于收益）
+    // 否则如果节点是静态的，则标记节点为静态根节点
     if (node.static && node.children.length && !(
       node.children.length === 1 &&
       node.children[0].type === 3
@@ -119,11 +129,13 @@ function markStaticRoots(node: ASTNode, isInFor: boolean) {
     } else {
       node.staticRoot = false
     }
+    // 如果节点存在子节点，循环节点的子节点数组，递归为子节点添加静态根节点标记
     if (node.children) {
       for (let i = 0, l = node.children.length; i < l; i++) {
         markStaticRoots(node.children[i], isInFor || !!node.for)
       }
     }
+    // 如果节点存在条件渲染节点，则循环节点的分支节点，递归为分支节点添加静态根节点标记
     if (node.ifConditions) {
       for (let i = 1, l = node.ifConditions.length; i < l; i++) {
         markStaticRoots(node.ifConditions[i].block, isInFor)
