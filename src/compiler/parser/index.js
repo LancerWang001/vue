@@ -552,7 +552,7 @@ export function parse(
          */
         let res
         let child: ?ASTNode
-        // 如果当前节点元素没有使用 v-pre 指令且文本差值表达式解析结果不为空，则根据当前文本内容生成标签属性节点
+        // 如果当前节点元素没有使用 v-pre 指令且文本差值表达式解析结果不为空，则根据当前文本内容生成表达式节点
         if (!inVPre && text !== ' ' && (res = parseText(text, delimiters))) {
           child = {
             type: 2,
