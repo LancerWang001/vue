@@ -18,7 +18,7 @@ import {
   defineReactive
 } from '../util/index'
 
-export function initGlobalAPI (Vue: GlobalAPI) {
+export function initGlobalAPI(Vue: GlobalAPI) {
   // config
   const configDef = {}
   configDef.get = () => config
@@ -41,31 +41,36 @@ export function initGlobalAPI (Vue: GlobalAPI) {
     defineReactive
   }
 
-	// 静态方法 set / del / nextTick
+  // 静态方法 set / del / nextTick
   Vue.set = set
   Vue.delete = del
   Vue.nextTick = nextTick
 
   // 2.6 explicit observable API
-	// 将普通对象变为响应式对象
+  // 将普通对象变为响应式对象
   Vue.observable = <T>(obj: T): T => {
     observe(obj)
     return obj
   }
 
-  Vue.options = Object.create(null)
+    Vue.options = Object.create(null)
   ASSET_TYPES.forEach(type => {
-    Vue.options[type + 's'] = Object.create(null)
-  })
+      Vue.options[type + 's'] = Object.create(null)
+    })
 
-  // this is used to identify the "base" constructor to extend all plain-object
-  // components with in Weex's multi-instance scenarios.
-  Vue.options._base = Vue
+    // this is used to identify the "base" constructor to extend all plain-object
+    // components with in Weex's multi-instance scenarios.
+    Vue.options._base = Vue
 
-  extend(Vue.options.components, builtInComponents)
+    // 添加 keep-alive 组件
+    extend(Vue.options.components, builtInComponents)
 
-  initUse(Vue)
-  initMixin(Vue)
-  initExtend(Vue)
-  initAssetRegisters(Vue)
+    // 添加 Vue.use 用来注册插件
+    initUse(Vue)
+    // 添加 Vue.mixin 实现混入
+    initMixin(Vue)
+    // 添加 Vue.extend 基于传入的 options 选项返回一个组件的构造函数
+    initExtend(Vue)
+    // 添加 Vue.directives、Vue.component、Vue.filter 等方法
+    initAssetRegisters(Vue)
 }
