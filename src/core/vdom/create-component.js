@@ -55,14 +55,14 @@ const componentVNodeHooks = {
       const mountedNode: any = vnode // work around flow
       componentVNodeHooks.prepatch(mountedNode, mountedNode)
     }
-    // 否则根据组件 VNode 创建组件实例，并渲染到页面上
+    // 否则根据组件 VNode 创建组件实例，并渲染成真实dom
     else {
       // 创建组件实例
       const child = vnode.componentInstance = createComponentInstanceForVnode(
         vnode,
-        activeInstance
+        activeInstance // 当前组件的父组件对象
       )
-      // 将组件实例渲染到页面上
+      // 将组件实例渲染成真实dom
       child.$mount(hydrating ? vnode.elm : undefined, hydrating)
     }
   },

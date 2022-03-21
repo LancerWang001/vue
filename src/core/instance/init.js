@@ -12,7 +12,7 @@ import { extend, mergeOptions, formatComponentName } from '../util/index'
 
 let uid = 0
 
-export function initMixin (Vue: Class<Component>) {
+export function initMixin(Vue: Class<Component>) {
   Vue.prototype._init = function (options?: Object) {
     const vm: Component = this
     // a uid
@@ -71,26 +71,48 @@ export function initMixin (Vue: Class<Component>) {
   }
 }
 
-export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
+/**
+ * @name initInternalComponent
+ * @description 初始化内部组件参数的方法
+ * @param {Component} vm 组件实例
+ * @param {InternalComponentOptions} options 组件实例选项参数
+ */
+export function initInternalComponent(vm: Component, options: InternalComponentOptions) {
+  // 以组件构造函数中的 options 对象为原型创建组件实例的选项对象 $options
   const opts = vm.$options = Object.create(vm.constructor.options)
   // doing this because it's faster than dynamic enumeration.
+  /**
+   * @const {VNode} parentVnode
+   * @description 获取组件 Vnode
+   */
   const parentVnode = options._parentVnode
+  // 为组件实例选项添加父组件实例
   opts.parent = options.parent
+  // 为组件实例选项添加父虚拟节点
   opts._parentVnode = parentVnode
 
+  /**
+   * @const {VNodeComponentOptions} vnodeComponentOptions
+   * @description 获取组件选项参数
+   */
   const vnodeComponentOptions = parentVnode.componentOptions
+  // 为组件实例选项添加属性数据
   opts.propsData = vnodeComponentOptions.propsData
+  // 为组件实例选项添加事件监听器
   opts._parentListeners = vnodeComponentOptions.listeners
+  // 为组件实例选项添加子节点
   opts._renderChildren = vnodeComponentOptions.children
+  // 为组件实例选项添加组件名
   opts._componentTag = vnodeComponentOptions.tag
 
+  // 为组件实例选项添加渲染函数、静态渲染函数
   if (options.render) {
     opts.render = options.render
     opts.staticRenderFns = options.staticRenderFns
   }
 }
 
-export function resolveConstructorOptions (Ctor: Class<Component>) {
+export function resolveConstructorOptions(Ctor: Class<Component>) {
   let options = Ctor.options
   if (Ctor.super) {
     const superOptions = resolveConstructorOptions(Ctor.super)
@@ -114,7 +136,7 @@ export function resolveConstructorOptions (Ctor: Class<Component>) {
   return options
 }
 
-function resolveModifiedOptions (Ctor: Class<Component>): ?Object {
+function resolveModifiedOptions(Ctor: Class<Component>): ?Object {
   let modified
   const latest = Ctor.options
   const sealed = Ctor.sealedOptions

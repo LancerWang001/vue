@@ -29,7 +29,7 @@ export function setActiveInstance(vm: Component) {
   }
 }
 
-export function initLifecycle (vm: Component) {
+export function initLifecycle(vm: Component) {
   const options = vm.$options
 
   // locate first non-abstract parent
@@ -55,44 +55,44 @@ export function initLifecycle (vm: Component) {
   vm._isBeingDestroyed = false
 }
 
-export function lifecycleMixin (Vue: Class<Component>) {
-	// 渲染虚拟dom的方法
+export function lifecycleMixin(Vue: Class<Component>) {
+  // 渲染虚拟dom的方法
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
-		// 获取当前Vue实例
+    // 获取当前Vue实例
     const vm: Component = this
-		// 将Vue实例上挂载的元素当作旧挂载元素（真实dom）
+    // 将Vue实例上挂载的元素当作旧挂载元素（真实dom）
     const prevEl = vm.$el
-		// 将Vue实例上挂载的虚拟dom当作旧虚拟dom
+    // 将Vue实例上挂载的虚拟dom当作旧虚拟dom
     const prevVnode = vm._vnode
-		// 恢复当前活跃Vue实例的方法
+    // 将当前组件实例记录为活跃的组件，并获得恢复当前活跃Vue实例的方法
     const restoreActiveInstance = setActiveInstance(vm)
-		// 将vm._vnode赋值为新的vnode
+    // 将vm._vnode赋值为新的vnode
     vm._vnode = vnode
     // Vue.prototype.__patch__ is injected in entry points
     // based on the rendering backend used.
-		// 如果旧vnode不存在，则初始化虚拟dom树，并转化成真实dom，挂载到vm.$el上
+    // 如果旧vnode不存在，则初始化虚拟dom树，并转化成真实dom，挂载到vm.$el上
     if (!prevVnode) {
       // initial render
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
     }
-		// 否则对比新旧vnode，将差异渲染到真实dom，挂载到vm.$el上
-		else {
+    // 否则对比新旧vnode，将差异渲染到真实dom，挂载到vm.$el上
+    else {
       // updates
       vm.$el = vm.__patch__(prevVnode, vnode)
     }
-		// 恢复当前活跃的Vue实例
+    // 恢复当前活跃的Vue实例
     restoreActiveInstance()
     // update __vue__ reference
-		// 移除旧真实dom上的Vue实例
+    // 移除旧真实dom上的Vue实例
     if (prevEl) {
       prevEl.__vue__ = null
     }
-		// 将Vue实例挂载到新真实dom上
+    // 将Vue实例挂载到新真实dom上
     if (vm.$el) {
       vm.$el.__vue__ = vm
     }
     // if parent is an HOC, update its $el as well
-		// 如果父Vue实例是高阶组件，则同步更新父Vue实例的挂载元素
+    // 如果父Vue实例是高阶组件，则同步更新父Vue实例的挂载元素
     if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
       vm.$parent.$el = vm.$el
     }
@@ -151,7 +151,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
   }
 }
 
-export function mountComponent (
+export function mountComponent(
   vm: Component,
   el: ?Element,
   hydrating?: boolean
@@ -200,8 +200,8 @@ export function mountComponent (
     }
   } else {
     updateComponent = () => {
-			// vm._render：用户传入的render函数或编译模板后的render函数
-			// vm._update：调用`patch`方法，将虚拟dom转为真实dom，挂载到页面上
+      // vm._render：用户传入的render函数或编译模板后的render函数
+      // vm._update：调用`patch`方法，将虚拟dom转为真实dom，挂载到页面上
       vm._update(vm._render(), hydrating)
     }
   }
@@ -209,15 +209,15 @@ export function mountComponent (
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
-	// 实参：
-	// vm：Vue组件实例
-	// updateComponent：更新方法
-	// noop：更新后的回调函数
-	// { before() {} }：Watcher选项配置
-	// true：标识当前`Watcher`为渲染Wacther
+  // 实参：
+  // vm：Vue组件实例
+  // updateComponent：更新方法
+  // noop：更新后的回调函数
+  // { before() {} }：Watcher选项配置
+  // true：标识当前`Watcher`为渲染Wacther
   new Watcher(vm, updateComponent, noop, {
-		// before：更新前的操作，触发`beforeUpdate`钩子函数
-    before () {
+    // before：更新前的操作，触发`beforeUpdate`钩子函数
+    before() {
       if (vm._isMounted && !vm._isDestroyed) {
         callHook(vm, 'beforeUpdate')
       }
@@ -234,7 +234,7 @@ export function mountComponent (
   return vm
 }
 
-export function updateChildComponent (
+export function updateChildComponent(
   vm: Component,
   propsData: ?Object,
   listeners: ?Object,
@@ -315,14 +315,14 @@ export function updateChildComponent (
   }
 }
 
-function isInInactiveTree (vm) {
+function isInInactiveTree(vm) {
   while (vm && (vm = vm.$parent)) {
     if (vm._inactive) return true
   }
   return false
 }
 
-export function activateChildComponent (vm: Component, direct?: boolean) {
+export function activateChildComponent(vm: Component, direct?: boolean) {
   if (direct) {
     vm._directInactive = false
     if (isInInactiveTree(vm)) {
@@ -340,7 +340,7 @@ export function activateChildComponent (vm: Component, direct?: boolean) {
   }
 }
 
-export function deactivateChildComponent (vm: Component, direct?: boolean) {
+export function deactivateChildComponent(vm: Component, direct?: boolean) {
   if (direct) {
     vm._directInactive = true
     if (isInInactiveTree(vm)) {
@@ -356,7 +356,7 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
   }
 }
 
-export function callHook (vm: Component, hook: string) {
+export function callHook(vm: Component, hook: string) {
   // #7573 disable dep collection when invoking lifecycle hooks
   pushTarget()
   const handlers = vm.$options[hook]
