@@ -152,17 +152,33 @@ export function genElement(el: ASTElement, state: CodegenState): string {
 }
 
 // hoist static sub-trees out
+/**
+ * @name genStatic
+ * @description 生成静态内容渲染代码的方法
+ * @description 将所有静态内容渲染函数提升到外层进行统一管理
+ * @param {ASTElement} el 节点 ast 对象
+ * @param {CodegenState} state 生成代码的中间状态
+ * @returns {string} 静态内容渲染代码
+ */
 function genStatic(el: ASTElement, state: CodegenState): string {
+  // 将当前节点静态内容已被处理的标识置为 true
   el.staticProcessed = true
   // Some elements (templates) need to behave differently inside of a v-pre
   // node.  All pre nodes are static roots, so we can use this as a location to
   // wrap a state change and reset it upon exiting the pre node.
+  // 保留中间状态的 pre 标识
   const originalPreState = state.pre
+  // 如果节点处于 v-pre 中，则将节点的 pre 标识赋值给中间状态的 pre 标识
   if (el.pre) {
     state.pre = el.pre
   }
+  // 根据节点和中间状态生成渲染代码
+  // 将渲染代码存入 staticRenderFns 数组中
   state.staticRenderFns.push(`with(this){return ${genElement(el, state)}}`)
+  // 还原中间状态的 pre 标识
   state.pre = originalPreState
+  // 根据当前渲染代码在 staticRenderFns 中的索引，生成渲染函数代码，并返回
+  // _m = renderStatic
   return `_m(${state.staticRenderFns.length - 1
     }${el.staticInFor ? ',true' : ''
     })`
